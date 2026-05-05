@@ -101,3 +101,28 @@ Pick one of the following before model loading lands in the Lambda image:
 Option 1 is the default unless the dev-loop friction proves too high.
 
 **Why this was logged:** The v3 doc explicitly anticipates ML-stack lag. Recording which library actually broke (and how) preserves the reasoning for whichever Phase 2 path is chosen.
+
+---
+
+## 2026-05-04 — Local dev pinned to Python 3.13 (option 1 taken)
+
+Took option 1 from the previous entry. Installed Python 3.13.3 via Homebrew (`brew install python@3.13`) and rebuilt `backend/.venv` against `/opt/homebrew/bin/python3.13`. Reinstalled `transformers`, `torch`, `yake`. Re-ran `backend/explore/evaluate_corpus.py`.
+
+**Outcomes:**
+- `yake==0.7.3` (with `networkx==3.6.1`) imports cleanly on Python 3.13.
+- Keyword column in `docs/model-evaluation.md` is now populated.
+- Sentiment accuracy unchanged at 16/23 = 70 % (deterministic models, same inputs).
+- Mean per-input inference dropped from 230 ms to 82 ms post-warmup. The 3.14 number was likely inflated by JIT/cache warm-up; unrelated to the version switch.
+
+**Local environment now:**
+- Python: 3.13.3 (matches v3 spec)
+- The 3.14 system Python remains installed but unused by this project.
+- `pyenv` was not used; Homebrew's `python@3.13` formula is sufficient and was already on the machine.
+
+**Note for Section A of the v3 checklist:**
+The doc says "Install pyenv … pyenv install 3.13". This project doesn't use pyenv; it uses Homebrew's `python@3.13` directly. If you ever need parallel 3.12/3.13/3.14 installs, install pyenv then. For one project pinned to 3.13, the simpler path was taken.
+
+**Open items not addressed by this switch:**
+- Node.js is still v25.9.0 (spec says 22 LTS). Will be reconciled when Phase 3 starts.
+- AWS CLI is still not installed.
+- No GitHub remote exists yet; `main` is a local-only branch.
