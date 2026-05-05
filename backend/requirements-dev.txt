@@ -1,0 +1,5 @@
+# Local model-exploration dependencies (NOT shipped to Lambda).
+# Used by backend/explore/*.py and the corpus evaluation script.
+transformers>=4.44
+torch
+yake

@@ -1,0 +1,88 @@
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- Editor / IDE ----------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.fleet/
+
+# ---------- Node ----------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.cache/
+.parcel-cache/
+.vite/
+.turbo/
+
+# Env / config
+.env
+.env.local
+.env.*.local
+
+# Coverage
+coverage/
+*.lcov
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtualenvs
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging / build
+*.egg
+*.egg-info/
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Hugging Face local cache (if redirected into project)
+.hf_cache/
+
+# ---------- Docker ----------
+*.pid
+
+# ---------- Project-specific scratch ----------
+# Model exploration scratch outputs
+backend/explore/output/
+backend/explore/*.log
+
+# Lambda packaging artifacts
+backend/build/
+backend/.aws-sam/
+
+# AWS credentials should never be committed
+.aws/
+aws.env

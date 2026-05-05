@@ -1,0 +1,5 @@
+# Lambda runtime dependencies.
+# Phase 1 stub uses only the standard library — this file is intentionally
+# empty (apart from this comment) so the Dockerfile's `pip install` step
+# succeeds without pulling anything. Real dependencies (transformers, torch,
+# yake) land in Phase 2.

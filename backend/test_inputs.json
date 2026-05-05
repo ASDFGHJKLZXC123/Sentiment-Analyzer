@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "language": "en",
+  "description": "Phase 1 test corpus. 24 English-only cases covering 8 categories. See docs/phase1-foundation.md for category rationale.",
+  "cases": [
+    {
+      "id": "pos-01",
+      "category": "clear_positive",
+      "text": "This is the best purchase I've ever made, completely worth every penny.",
+      "expected_sentiment": "positive"
+    },
+    {
+      "id": "pos-02",
+      "category": "clear_positive",
+      "text": "I absolutely love this. The quality is excellent and shipping was fast.",
+      "expected_sentiment": "positive"
+    },
+    {
+      "id": "pos-03",
+      "category": "clear_positive",
+      "text": "Amazing experience! Highly recommend to anyone looking for a great product.",
+      "expected_sentiment": "positive"
+    },
+    {
+      "id": "neg-01",
+      "category": "clear_negative",
+      "text": "Terrible product. It broke after one day and customer service ignored me.",
+      "expected_sentiment": "negative"
+    },
+    {
+      "id": "neg-02",
+      "category": "clear_negative",
+      "text": "Worst experience of my life. I want my money back.",
+      "expected_sentiment": "negative"
+    },
+    {
+      "id": "neg-03",
+      "category": "clear_negative",
+      "text": "This was a complete waste of money and the support team is rude.",
+      "expected_sentiment": "negative"
+    },
+    {
+      "id": "neu-01",
+      "category": "neutral",
+      "text": "The package was delivered on Tuesday at 2 PM.",
+      "expected_sentiment": "neutral"
+    },
+    {
+      "id": "neu-02",
+      "category": "neutral",
+      "text": "The device measures 6 inches by 4 inches and weighs about 0.5 kg.",
+      "expected_sentiment": "neutral"
+    },
+    {
+      "id": "neu-03",
+      "category": "neutral",
+      "text": "The product comes in three color options: black, white, and gray.",
+      "expected_sentiment": "neutral"
+    },
+    {
+      "id": "sar-01",
+      "category": "sarcastic",
+      "text": "Oh great, another email. Just what I needed today.",
+      "expected_sentiment": "negative",
+      "notes": "Sarcasm; expect model to read this as positive or neutral."
+    },
+    {
+      "id": "sar-02",
+      "category": "sarcastic",
+      "text": "Wonderful, the wifi is down again. Truly the highlight of my morning.",
+      "expected_sentiment": "negative",
+      "notes": "Sarcasm; surface vocabulary is positive."
+    },
+    {
+      "id": "sar-03",
+      "category": "sarcastic",
+      "text": "Sure, paying $20 for a coffee is totally reasonable.",
+      "expected_sentiment": "negative",
+      "notes": "Sarcasm with no overtly positive words; harder to detect."
+    },
+    {
+      "id": "mix-01",
+      "category": "mixed",
+      "text": "The food was excellent but the service was painfully slow.",
+      "expected_sentiment": "neutral",
+      "notes": "Dual-aspect; either positive or neutral is defensible."
+    },
+    {
+      "id": "mix-02",
+      "category": "mixed",
+      "text": "I love the design but the battery life is disappointing.",
+      "expected_sentiment": "neutral",
+      "notes": "Dual-aspect; emotion model likely returns mixed joy and sadness."
+    },
+    {
+      "id": "mix-03",
+      "category": "mixed",
+      "text": "Great features, terrible price.",
+      "expected_sentiment": "neutral",
+      "notes": "Two short opposing clauses."
+    },
+    {
+      "id": "neg-not-01",
+      "category": "negation",
+      "text": "This is not bad at all, I'm actually impressed.",
+      "expected_sentiment": "positive",
+      "notes": "Tests whether the model handles 'not bad' as positive."
+    },
+    {
+      "id": "neg-not-02",
+      "category": "negation",
+      "text": "I can't stop using this app, it's surprisingly addictive.",
+      "expected_sentiment": "positive",
+      "notes": "'can't stop' is positive in context."
+    },
+    {
+      "id": "slang-01",
+      "category": "internet_shorthand",
+      "text": "lmao this is fire ngl",
+      "expected_sentiment": "positive",
+      "notes": "Twitter-trained model should handle this well."
+    },
+    {
+      "id": "slang-02",
+      "category": "internet_shorthand",
+      "text": "bruh this app is mid af",
+      "expected_sentiment": "negative",
+      "notes": "'mid' as negative is recent slang; may be misread."
+    },
+    {
+      "id": "edge-01",
+      "category": "edge_case",
+      "text": "okay",
+      "expected_sentiment": "neutral",
+      "notes": "Single word."
+    },
+    {
+      "id": "edge-02",
+      "category": "edge_case",
+      "text": "🔥",
+      "expected_sentiment": "positive",
+      "notes": "Single emoji; depends on tokenizer handling."
+    },
+    {
+      "id": "edge-03",
+      "category": "edge_case",
+      "text": "I LOVE THIS PRODUCT SO MUCH",
+      "expected_sentiment": "positive",
+      "notes": "All caps; tests whether casing affects scoring."
+    },
+    {
+      "id": "edge-04",
+      "category": "edge_case",
+      "text": "I have been using this product for about three months now and I have to say my feelings about it are genuinely complicated. On the one hand, the build quality is exceptional and the customer service team responded to my one inquiry within an hour, which honestly surprised me given how short-staffed support teams seem to be these days. On the other hand, the software updates have been irregular at best, and a feature that was advertised in the marketing materials still has not shipped, which is mildly frustrating. The price point is fair given the hardware, but I would expect more polish in the companion app at this tier. Would I recommend it to a friend? Probably yes, with caveats. Would I buy it again? Probably, but I would wait for a sale.",
+      "expected_sentiment": "neutral",
+      "notes": "Long passage; tests truncation behavior of the 512-token model."
+    },
+    {
+      "id": "edge-05",
+      "category": "edge_case",
+      "text": "",
+      "expected_sentiment": "neutral",
+      "notes": "Empty string; backend must reject before invoking the model."
+    }
+  ]
+}
