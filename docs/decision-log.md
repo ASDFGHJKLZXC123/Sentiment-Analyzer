@@ -167,3 +167,35 @@ Bumped `phase1-foundation.md` from v3 to v4. No technical direction changed; v4 
 - `phase1-foundation.md` → v4
 
 Earlier versions remain in Git history.
+
+---
+
+## 2026-05-05 — Phase 1 progress: GitHub setup completed, AWS Section D landed
+
+Status update following the v4 bump entry above. Both open infrastructure tracks (GitHub Section B, AWS Section D) advanced on the same day. Recording the new state so the v4 entry's "outstanding" claims are not misread as still-current.
+
+**GitHub (Section B) — complete:**
+- 2FA enabled on the GitHub account.
+- Initial scaffolding pushed at `00fd4c0`. The follow-up commit `1edb65e` (Python 3.13 pin doc updates) was unpushed at v4 bump time and has now also been pushed; remote tip is `6122a7f`.
+- GitHub-side init / `master`→`main` rename / fresh clone remain N/A — the repo was scaffolded locally first and `origin` was added afterward.
+- Minor: the remote slug is `Sentiment-Analyzer` (capital S) rather than the spec's lowercase `sentiment-analyzer`. Not blocking; can be renamed via GitHub Settings if strict slug consistency is wanted.
+
+**AWS (Section D) — mostly complete:**
+- AWS account `323336951250`. Root MFA enabled. No root access keys (`AccountAccessKeysPresent = 0` via `iam get-account-summary`).
+- IAM user `sentiment-dev` created. Virtual MFA registered 2026-05-06 UTC (late evening 2026-05-05 in US time zones).
+- Local AWS CLI v2 (`aws-cli/2.27.20`) installed via Homebrew; `aws configure` set to `us-east-1`; `aws sts get-caller-identity` returns `arn:aws:iam::323336951250:user/sentiment-dev`.
+
+**Deviation worth recording — group-based policy attachment:**
+
+The four required AWS managed policies (`AWSLambda_FullAccess`, `AmazonEC2ContainerRegistryFullAccess`, `CloudWatchLogsFullAccess`, `IAMReadOnlyAccess`) are attached via group `sentiment-dev-group`, not directly to the user as Section D's literal wording suggested. This is functionally equivalent for the dev user but operationally cleaner: if more IAM users are ever added (collaborator, second machine, etc.), they can be added to the group rather than re-attaching policies one by one, and the policy set can be updated in one place. No security or capability difference for Phase 1. Future Section D wording should accept either direct or group-based attachment.
+
+**Still outstanding for Phase 1:**
+- AWS billing alert at $5/month threshold + SNS subscription email confirmation (Section D last two items).
+- Node 22 LTS install via nvm (Section A — local still on Node 25.9.0).
+- Section G Docker smoke test: build, run, verify handler response, tear down stub image.
+- `phase-1-complete` tag (Section H).
+
+No technical decisions changed in this update.
+
+**Documents updated in this revision:**
+- None. This is a status entry, not a doc revision.
