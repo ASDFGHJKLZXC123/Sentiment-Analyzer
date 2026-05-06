@@ -107,8 +107,8 @@ Items marked **[YOU]** require your personal accounts, credentials, or local mac
     "surprise": 0.02
   },
   "keywords": [
-    { "term": "amazing", "weight": 0.92 },
-    { "term": "service", "weight": 0.71 }
+    { "term": "Amazing experience", "score": 0.042 },
+    { "term": "Amazing", "score": 0.201 }
   ],
   "inputText": "echoed input text",
   "analyzedAt": "2026-05-04T12:34:56Z"
@@ -116,17 +116,37 @@ Items marked **[YOU]** require your personal accounts, credentials, or local mac
 ```
 
 **Conventions:**
-- All keys are camelCase. Single-word keys (`sentiment`, `emotions`, `keywords`, `label`, `confidence`, `term`, `weight`) are unchanged. Multi-word keys use camelCase (`inputText`, `analyzedAt`).
+- All keys are camelCase. Single-word keys (`sentiment`, `emotions`, `keywords`, `label`, `confidence`, `term`, `score`) are unchanged. Multi-word keys use camelCase (`inputText`, `analyzedAt`).
 - Confidence and emotion values are probabilities (0–1), formatted by frontend
 - Sentiment labels are human-readable strings, mapped from raw model output in Python
+- Keyword `score` values are raw YAKE scores; lower means more relevant. The frontend must invert or normalize these scores before using them for visual weight in the word cloud.
 - `analyzedAt` is server-side, ISO 8601, UTC
+
+**Error response contract:**
+
+Validation errors return `4xx` with this shape:
+
+```json
+{
+  "error": {
+    "code": "EMPTY_INPUT | INPUT_TOO_LONG | INVALID_JSON",
+    "message": "Human-readable error message",
+    "field": "text"
+  }
+}
+```
+
+- `EMPTY_INPUT` (`400`): `text` is missing, empty, or only whitespace
+- `INPUT_TOO_LONG` (`413`): `text` exceeds 5,000 characters; the client should block this before submitting
+- `INVALID_JSON` (`400`): request body is not valid JSON or cannot be parsed as an object
+- The inference path still truncates model input to each model's supported limit; the validation ceiling prevents pathological payloads, not normal long-form text. Server-side echoing in `inputText` is capped at 200 characters.
 
 ### Lambda configuration
 
 | Setting | Value |
 |---|---|
 | Architecture | ARM64 (Graviton — cheaper, well-supported) |
-| Memory | 2048 MB |
+| Memory | 2048 MB baseline; re-test in Phase 2 and increase to 3072 MB if combined model loading or cold starts need the headroom |
 | Timeout | 30 seconds |
 | Function URL | Enabled, CORS allowing GitHub Pages domain |
 | Environment variables | `SENTIMENT_MODEL`, `EMOTION_MODEL` (for swap-without-rebuild) |
@@ -181,7 +201,7 @@ Phase 1 is complete when:
 - [x] Repository exists on GitHub with the structure above, on the `main` branch *(scaffolding pushed at `00fd4c0`; subsequent commit `1edb65e` with Python 3.13 pin doc updates is still unpushed)*
 - [x] Local Node and Python environments are working (Node 22 LTS, Python 3.13) *(Python 3.13.3 via Homebrew; Node v22.22.2 via nvm with `default` alias pointing at 22)*
 - [ ] AWS account is configured with billing alert *(IAM/MFA/CLI all configured and verified; billing alert + SNS test still pending)*
-- [x] Both models have been downloaded and tested locally with the test corpus *(see `docs/model-evaluation.md`: 16/23 = 70% sentiment accuracy, 82 ms post-warmup inference)*
+- [x] Sentiment model, emotion model, and YAKE keyword extraction have been downloaded/tested locally with the test corpus *(see `docs/model-evaluation.md`: 16/23 = 70% sentiment accuracy, 82 ms post-warmup inference; YAKE outputs raw lower-is-better scores)*
 - [x] Decision log entry is written for the model choices
 - [x] Frontend hosting target (GitHub Pages) is confirmed
 - [x] Deployment path (container) is confirmed by successful local Docker build of an empty test image *(image built at 196 MB content / 809 MB on disk; Lambda RIE smoke test returned 200 with the expected envelope and the body parsed to `{ok: true, phase: 1, ...}`; runtime init 217 ms, handler invoke 5.3 ms; image torn down after verification)*
@@ -311,4 +331,4 @@ If any of these happen, stop and reconsider before continuing:
 - Combined Docker image size exceeds 8 GB — something is wrong with layer caching
 - AWS billing alert fires during Phase 1 — you have not deployed anything yet, so this means a misconfiguration
 - A test input crashes either model — investigate before proceeding; production users will hit the same input class
-- PyTorch installation fails on Python 3.13 — fall back to 3.12 and update the doc; ML library support on the latest Python sometimes lags
+- Core analysis dependencies fail on the chosen Python runtime — the actual Phase 1 failure was YAKE/networkx on Python 3.14.1; Python 3.13.3 is the current project pin because the full sentiment + emotion + keyword stack imports cleanly there

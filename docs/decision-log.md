@@ -199,3 +199,60 @@ No technical decisions changed in this update.
 
 **Documents updated in this revision:**
 - None. This is a status entry, not a doc revision.
+
+---
+
+## 2026-05-06 — Phase 1 doc corrections: Node status superseded, API contract tightened
+
+The 2026-05-05 status entry above said Node 22 LTS was still outstanding. That status was superseded later the same day by commit `0a9c648` (`Phase 1: install Node 22 LTS, complete Section A`). Node v22.22.2 is installed via nvm, `default` points at `22`, and the Section A Node item plus the local-environment success criterion should remain checked in `phase1-foundation.md`.
+
+Also tightened the Phase 1 API contract before Phase 2 implementation:
+
+- Renamed `keywords[].weight` to `keywords[].score` to match YAKE's raw score semantics.
+- Documented that lower YAKE scores are more relevant, so the frontend word cloud must invert or normalize scores before using them for visual size.
+- Added a baseline `4xx` error response shape for `EMPTY_INPUT`, `INPUT_TOO_LONG`, and `INVALID_JSON`.
+- Left language rejection out of the committed error codes for now; the product is English-only, but Phase 2 has not yet chosen a language-detection mechanism.
+- Added a Lambda memory sizing note: 2048 MB remains the baseline, with 3072 MB as the first tuning target if combined model loading or cold starts need more headroom.
+- Updated the red-flag note to reflect the actual Phase 1 dependency issue: YAKE/networkx failed on Python 3.14.1; the stack works on the current Python 3.13.3 pin.
+
+No version bump to `phase1-foundation.md`; these are contract/status clarifications within the v4 status pass.
+
+---
+
+## 2026-05-05 errata — Node LTS wording and release-cycle context
+
+This corrects the Node wording in the 2026-05-05 v4 status entry without changing the project runtime choice. Node 24 LTS was not newly released in April 2026, and it does not have a shorter LTS window: Node 24 (Krypton) was initially released on 2025-05-06, entered Active LTS on 2025-10-28, is scheduled to enter Maintenance LTS on 2026-10-20, and reaches EOL on 2028-04-30.
+
+The sharper interview narrative is: Node 22 (Jod) is Maintenance LTS as of this status pass, supported through 2027-04-30; Node 24 (Krypton) is Active LTS, supported through 2028-04-30. Choosing Node 22 remains a conservative ecosystem-maturity call, not a claim that Node 22 is the more active or longer-supported LTS line.
+
+Context: Node has announced a release-schedule change starting with 27.x. The odd/even split is going away, every release will become LTS, and the project is moving from two major releases per year to one major release per year. That future change does not affect this project's Node 22 pin; it only changes how to explain Node's release model going forward.
+
+---
+
+## 2026-05-06 — Phase 2 planning review, v3
+
+Applied the external review comments that materially improve the project plan and Phase 2 backend spec.
+
+**Changes accepted:**
+
+1. Removed `local_dir_use_symlinks=False` from the `snapshot_download(...)` example. Hugging Face Hub v1.x removed that parameter; `local_dir` is enough for the Docker build snapshot layout.
+
+2. Tightened the Transformers pinning plan. Phase 2 now treats Transformers v5 as a major compatibility decision, uses `transformers==5.8.0` as the current candidate, keeps `5.7.0` as the Phase 1-verified fallback, and requires real model-load smoke tests before committing the pin. Any fallback to 4.x must include a current security-advisory check and a logged reason v5 was rejected.
+
+3. Clarified Node.js lifecycle wording in `docs/project-plan.md`. The runtime remains Node 22 LTS by choice, but the plan now says it is Maintenance LTS and that Node 24 is the Active LTS alternative.
+
+4. Changed Phase 2 `INPUT_TOO_LONG` from `413` to `422`. The 5000-character limit is validation on a parsed JSON field, not a physical request-body limit. Platform-level body-size failures remain outside the handler-owned error envelope.
+
+5. Documented Lambda Function URL throttling. Reserved concurrency can produce service-generated `429 Too Many Requests`; clients should map that to a throttled state, but tests should not expect the handler's JSON error envelope.
+
+6. Made validation precedence contractual: method check, optional base64 decode, JSON parse/object check, then `text` schema/business validation.
+
+7. Replaced reusable Phase 2 command examples with `<account-id>` placeholders. The real AWS account ID remains recorded in earlier private/status context, but the phase spec no longer repeats it in copy-pasteable commands.
+
+8. Added a CloudWatch Logs retention step using 14 days, so logs do not default to indefinite retention.
+
+9. Added Phase 3 frontend testing and accessibility scope to the project plan: Vitest, React Testing Library, Playwright smoke tests, axe checks, semantic HTML, and keyboard navigation.
+
+**Changes not accepted as written:**
+
+- Did not automatically switch the project from Node 22 to Node 24. Node 24 is the more current Active LTS line, but Node 22 remains supported through 2027-04-30 and was already installed locally. The plan now states the tradeoff instead of implying Node 22 is the most current LTS line.

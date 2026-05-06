@@ -2,21 +2,24 @@
 
 This is the high-level roadmap for the project. It covers all phases from foundation through optional extensions.
 
-For detailed, actionable specifications of each phase, see the corresponding `phaseN-*.md` document. This plan is the map; phase documents are the terrain.
+For detailed, actionable specifications of each phase, see the corresponding `docs/phaseN-*.md` document. This plan is the map; phase documents are the terrain.
 
 ## Document index
 
+Paths are repo-root relative.
+
 | Document | Purpose | Status |
 |---|---|---|
-| `project-plan.md` (this file) | High-level roadmap, all phases | Current |
-| `phase1-foundation.md` | Decision record + setup checklist for Phase 1 | Created |
-| `phase2-backend.md` | Backend build details | Pending |
-| `phase3-frontend.md` | Frontend build details | Pending |
-| `phase4-integration.md` | Integration details | Pending |
-| `phase5-cicd.md` | CI/CD pipeline details | Pending |
-| `phase6-polish.md` | Portfolio-readiness details | Pending |
-| `phase7-bulk.md` | Optional bulk CSV feature details | Pending |
-| `decision-log.md` | Running log of architectural decisions | Living document |
+| `docs/project-plan.md` (this file) | High-level roadmap, all phases | Current |
+| `docs/phase1-foundation.md` | Decision record + setup checklist for Phase 1 | Created |
+| `docs/phase2-backend.md` | Backend build details | Created |
+| `docs/phase2-results.md` | Phase 2 image size and performance measurements | Created |
+| `docs/phase3-frontend.md` | Frontend build details | Pending |
+| `docs/phase4-integration.md` | Integration details | Pending |
+| `docs/phase5-cicd.md` | CI/CD pipeline details | Pending |
+| `docs/phase6-polish.md` | Portfolio-readiness details | Pending |
+| `docs/phase7-bulk.md` | Optional bulk CSV feature details | Pending |
+| `docs/decision-log.md` | Running log of architectural decisions | Living document |
 
 ## Project summary
 
@@ -27,12 +30,12 @@ The portfolio value of this project is demonstrating end-to-end ML deployment â€
 ## Tech stack at a glance
 
 - **Frontend:** React 19 + TypeScript, built with Vite, hosted on GitHub Pages
-- **Local Node runtime:** Node.js 22 LTS
+- **Local Node runtime:** Node.js 22 LTS (Maintenance LTS; deliberately chosen over Node 24 Active LTS for ecosystem maturity)
 - **Backend:** Python 3.13 on AWS Lambda (container deployment), Hugging Face Transformers
 - **API:** Lambda Function URL (no API Gateway)
 - **CI/CD:** GitHub Actions with OIDC-based AWS authentication
 
-For finalized model choices, deployment configuration, and full reasoning, see `phase1-foundation.md`.
+For finalized model choices, deployment configuration, and full reasoning, see `docs/phase1-foundation.md`.
 
 ---
 
@@ -49,7 +52,7 @@ For finalized model choices, deployment configuration, and full reasoning, see `
 
 **Output:** A configured repository, working local environment, validated model choices, and a tagged `phase-1-complete` commit.
 
-**Detailed spec:** `phase1-foundation.md`
+**Detailed spec:** `docs/phase1-foundation.md`
 
 ---
 
@@ -60,14 +63,14 @@ For finalized model choices, deployment configuration, and full reasoning, see `
 **Scope:**
 - Python inference logic (sentiment + emotion + keyword extraction)
 - Dockerfile for Lambda container image
-- Lambda function configuration (memory, timeout, environment variables)
+- Lambda function configuration (memory, timeout, environment variables, model revision SHAs)
 - Lambda Function URL with CORS
 - Cold start strategy and warm-path performance validation
 - API contract finalized and documented
 
-**Output:** A live Lambda Function URL that accepts text and returns structured analysis results.
+**Output:** A live Lambda Function URL that accepts text and returns structured analysis results, with image-size and latency measurements recorded in `docs/phase2-results.md`.
 
-**Detailed spec:** `phase2-backend.md` (to be created)
+**Detailed spec:** `docs/phase2-backend.md`
 
 ---
 
@@ -82,10 +85,12 @@ For finalized model choices, deployment configuration, and full reasoning, see `
 - localStorage-based history persistence
 - Responsive layout for desktop and mobile
 - Visual design language (color coding, typography, charts)
+- Frontend test strategy: Vitest + React Testing Library for components and API-state handling
+- Browser and accessibility checks: Playwright smoke tests, axe checks, semantic HTML, and keyboard navigation
 
 **Output:** A locally-running React app that can call the Lambda and render results.
 
-**Detailed spec:** `phase3-frontend.md` (to be created)
+**Detailed spec:** `docs/phase3-frontend.md` (to be created)
 
 ---
 
@@ -101,7 +106,7 @@ For finalized model choices, deployment configuration, and full reasoning, see `
 
 **Output:** A working live demo that handles edge cases gracefully.
 
-**Detailed spec:** `phase4-integration.md` (to be created)
+**Detailed spec:** `docs/phase4-integration.md` (to be created)
 
 ---
 
@@ -119,7 +124,7 @@ For finalized model choices, deployment configuration, and full reasoning, see `
 
 **Output:** A fully automated pipeline; merging to `main` produces a deployed update without manual steps.
 
-**Detailed spec:** `phase5-cicd.md` (to be created)
+**Detailed spec:** `docs/phase5-cicd.md` (to be created)
 
 ---
 
@@ -136,7 +141,7 @@ For finalized model choices, deployment configuration, and full reasoning, see `
 
 **Output:** A portfolio link that demonstrates the project clearly to a recruiter in under two minutes.
 
-**Detailed spec:** `phase6-polish.md` (to be created)
+**Detailed spec:** `docs/phase6-polish.md` (to be created)
 
 ---
 
@@ -153,7 +158,7 @@ For finalized model choices, deployment configuration, and full reasoning, see `
 
 **Output:** A bulk upload feature that processes hundreds of rows and produces aggregate insights.
 
-**Detailed spec:** `phase7-bulk.md` (to be created)
+**Detailed spec:** `docs/phase7-bulk.md` (to be created)
 
 **Note:** This phase is optional. Skip if scope or time becomes a concern; the v1 product is complete without it.
 
@@ -167,4 +172,4 @@ For finalized model choices, deployment configuration, and full reasoning, see `
 
 **When a phase is complete:** Tag a commit with `phase-N-complete` so you can always return to a known-good state.
 
-**If scope creep appears:** Refer back to the explicit "not building" list in `phase1-foundation.md`. Adding scope mid-build is the most common reason small projects stall.
+**If scope creep appears:** Refer back to the explicit "not building" list in `docs/phase1-foundation.md`. Adding scope mid-build is the most common reason small projects stall.
