@@ -179,7 +179,7 @@ Non-English inputs were intentionally excluded. The chosen models are English-on
 
 Phase 1 is complete when:
 - [x] Repository exists on GitHub with the structure above, on the `main` branch *(scaffolding pushed at `00fd4c0`; subsequent commit `1edb65e` with Python 3.13 pin doc updates is still unpushed)*
-- [ ] Local Node and Python environments are working (Node 22 LTS, Python 3.13) *(Python 3.13.3 working; Node still on v25.9.0 — reconcile when Phase 3 starts)*
+- [x] Local Node and Python environments are working (Node 22 LTS, Python 3.13) *(Python 3.13.3 via Homebrew; Node v22.22.2 via nvm with `default` alias pointing at 22)*
 - [ ] AWS account is configured with billing alert *(IAM/MFA/CLI all configured and verified; billing alert + SNS test still pending)*
 - [x] Both models have been downloaded and tested locally with the test corpus *(see `docs/model-evaluation.md`: 16/23 = 70% sentiment accuracy, 82 ms post-warmup inference)*
 - [x] Decision log entry is written for the model choices
@@ -194,8 +194,8 @@ Work through these in order. Do not skip ahead — later steps depend on earlier
 
 ### Section A: Local development environment
 
-- [ ] **[YOU]** Install `nvm` (Node Version Manager) for your OS
-- [ ] **[YOU]** Install Node.js 22 LTS via nvm: `nvm install 22 && nvm use 22`
+- [x] **[YOU]** Install `nvm` (Node Version Manager) for your OS *(installed at `~/.nvm` and sourced from `.zshrc`)*
+- [x] **[YOU]** Install Node.js 22 LTS via nvm: `nvm install 22 && nvm use 22` *(installed v22.22.2 — latest in the Node 22 "Jod" LTS line — and ran `nvm alias default 22` so new shells pick it up automatically; `node --version` reports `v22.22.2`, `npm --version` reports `10.9.7`)*
 - [ ] **[YOU]** Install `pyenv` (Python Version Manager) — *optional; only needed for parallel Python versions. For a single-version pin, Homebrew is simpler.*
 - [x] **[YOU]** Install Python 3.13. Either via pyenv (`pyenv install 3.13 && pyenv global 3.13`) or via Homebrew (`brew install python@3.13`). This build used Homebrew (`/opt/homebrew/bin/python3.13`, currently 3.13.3).
 - [x] **[YOU]** Install Docker Desktop (required for container deployment path)
