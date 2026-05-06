@@ -126,3 +126,44 @@ The doc says "Install pyenv … pyenv install 3.13". This project doesn't use py
 - Node.js is still v25.9.0 (spec says 22 LTS). Will be reconciled when Phase 3 starts.
 - AWS CLI is still not installed.
 - No GitHub remote exists yet; `main` is a local-only branch.
+
+---
+
+## 2026-05-05 — Phase 1 foundation document, v4 (status pass)
+
+Bumped `phase1-foundation.md` from v3 to v4. No technical direction changed; v4 records the actual state of Phase 1 progress and incorporates clarifications surfaced in the prior two entries.
+
+**Changes:**
+
+1. **Setup checklist ticked.** Boxes are now checked for items the build has actually completed.
+   - Section A: Python 3.13, Docker, Git (≥ 2.30), Git identity, editor — done. Node 22 LTS, AWS CLI v2 — still outstanding.
+   - Section B: GitHub account confirmed, public repo created (registered as `Sentiment-Analyzer` — minor case drift from the lowercase spec slug; can be renamed via GitHub Settings if strict). 2FA, GitHub-side initialization, master→main rename, fresh clone — not applicable or still outstanding because the repo was scaffolded locally first and `origin` was added later.
+   - Section C: all done; commit at `00fd4c0`. Push to `origin` still pending — local `main` is one commit ahead of `origin/main`.
+   - Section D (AWS): entirely outstanding.
+   - Section E: all done. `backend/explore/evaluate_corpus.py` is the model exploration script.
+   - Section F: all done. Surprising failures recorded in `docs/model-evaluation.md`.
+   - Section G: stub Dockerfile and handler exist; the build/run/teardown smoke-test items are unchecked pending verification.
+   - Section H: not checked — Phase 1 closeout requires Section D and the Section G smoke test.
+
+2. **Section A pyenv softened.** The pyenv install step is now marked optional. The Python 3.13 step accepts either pyenv or Homebrew. This codifies the option-1 decision from the previous entry.
+
+3. **Section G preamble note added.** The Phase 1 stub Dockerfile is multi-arch by default; explicit `--platform=linux/arm64` pinning is deferred to Phase 2 production builds. Also noted that the Python 3.13 Lambda base image is on Amazon Linux 2023 (use `dnf` not `yum` if OS packages are added later).
+
+4. **Latest tech versions re-verified on 2026-05-05.** Web search confirmed:
+   - **React 19.2.5** is current (April 2026). Spec value "React 19" still right.
+   - **Node.js 22 LTS** supported through April 30, 2027. **Node.js 24 LTS** released April 2026 but only one month into LTS — v3 reasoning to prefer 22 for ecosystem maturity still holds.
+   - **Python 3.13** still supported on AWS Lambda as both managed runtime and container base image (on Amazon Linux 2023). Lambda also supports Python 3.14, but the v3 rejection of 3.14 (ML library lag — confirmed empirically by the YAKE/networkx failure on 3.14) still applies.
+   - **Vite "latest"** today resolves to **Vite 8** (released March 2026). Requires Node 20.19+ / 22.12+, compatible with the chosen Node 22 LTS. `@vitejs/plugin-react` v6 ships alongside it (Oxc-based, no Babel dep). Spec wording stays as "Vite (latest)".
+
+**Phase 1 status as of v4:**
+- Sentiment + emotion + keyword evaluation complete; 16/23 sentiment accuracy, 82 ms post-warmup inference (see `docs/model-evaluation.md`).
+- Local Python 3.13.3 environment working with `transformers`, `torch`, `yake`.
+- Local Node still on v25.9.0; will be reconciled when Phase 3 begins.
+- AWS account preparation (Section D) entirely outstanding.
+- GitHub remote registered at `origin`; `main` is one commit ahead and unpushed.
+- No `phase-1-complete` tag yet.
+
+**Documents updated in this revision:**
+- `phase1-foundation.md` → v4
+
+Earlier versions remain in Git history.

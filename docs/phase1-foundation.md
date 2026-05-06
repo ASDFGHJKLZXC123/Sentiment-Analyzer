@@ -1,4 +1,4 @@
-# Sentiment Analyzer Dashboard — Phase 1: Foundation (v3)
+# Sentiment Analyzer Dashboard — Phase 1: Foundation (v4)
 
 This document is the source of truth for Phase 1 decisions and setup. It has two parts:
 
@@ -7,7 +7,7 @@ This document is the source of truth for Phase 1 decisions and setup. It has two
 
 Items marked **[YOU]** require your personal accounts, credentials, or local machine and cannot be delegated.
 
-**Revision note:** This is v3. Changes from v1 and v2 are logged in `decision-log.md`. Earlier versions are kept in Git history for traceability.
+**Revision note:** This is v4. v4 is a status pass on 2026-05-05: completed checklist items are now ticked, Section A is softened to allow Homebrew as an alternative to pyenv (per the option-1 decision recorded in `decision-log.md`), and the v3 tech versions (React 19, Node 22 LTS, Python 3.13, Vite latest) were re-verified against current releases — no technical decisions changed. For reference, "Vite latest" today resolves to Vite 8 (released March 2026); Node 24 LTS also exists as of April 2026 but the v3 reasoning to prefer Node 22 for ecosystem maturity still applies. Changes from earlier versions are logged in `decision-log.md`. Earlier versions are kept in Git history for traceability.
 
 ---
 
@@ -178,13 +178,13 @@ Non-English inputs were intentionally excluded. The chosen models are English-on
 ### Success criteria for Phase 1
 
 Phase 1 is complete when:
-- [ ] Repository exists on GitHub with the structure above, on the `main` branch
-- [ ] Local Node and Python environments are working (Node 22 LTS, Python 3.13)
-- [ ] AWS account is configured with billing alert
-- [ ] Both models have been downloaded and tested locally with the test corpus
-- [ ] Decision log entry is written for the model choices
-- [ ] Frontend hosting target (GitHub Pages) is confirmed
-- [ ] Deployment path (container) is confirmed by successful local Docker build of an empty test image
+- [x] Repository exists on GitHub with the structure above, on the `main` branch *(scaffolding pushed at `00fd4c0`; subsequent commit `1edb65e` with Python 3.13 pin doc updates is still unpushed)*
+- [ ] Local Node and Python environments are working (Node 22 LTS, Python 3.13) *(Python 3.13.3 working; Node still on v25.9.0 — reconcile when Phase 3 starts)*
+- [ ] AWS account is configured with billing alert *(IAM/MFA/CLI all configured and verified; billing alert + SNS test still pending)*
+- [x] Both models have been downloaded and tested locally with the test corpus *(see `docs/model-evaluation.md`: 16/23 = 70% sentiment accuracy, 82 ms post-warmup inference)*
+- [x] Decision log entry is written for the model choices
+- [x] Frontend hosting target (GitHub Pages) is confirmed
+- [ ] Deployment path (container) is confirmed by successful local Docker build of an empty test image *(stub `Dockerfile` and handler exist; build-and-run smoke test not yet verified)*
 
 ---
 
@@ -196,88 +196,88 @@ Work through these in order. Do not skip ahead — later steps depend on earlier
 
 - [ ] **[YOU]** Install `nvm` (Node Version Manager) for your OS
 - [ ] **[YOU]** Install Node.js 22 LTS via nvm: `nvm install 22 && nvm use 22`
-- [ ] **[YOU]** Install `pyenv` (Python Version Manager) for your OS
-- [ ] **[YOU]** Install Python 3.13 via pyenv: `pyenv install 3.13 && pyenv global 3.13`
-- [ ] **[YOU]** Install Docker Desktop (required for container deployment path)
-- [ ] **[YOU]** Verify Docker runs: `docker run hello-world`
-- [ ] **[YOU]** Install Git and verify version is 2.30+
-- [ ] **[YOU]** Configure Git identity globally with your real name and the email associated with your GitHub account
-- [ ] **[YOU]** Install AWS CLI v2
-- [ ] **[YOU]** Install your editor of choice with TypeScript, Python, ESLint, Prettier, and Ruff extensions
+- [ ] **[YOU]** Install `pyenv` (Python Version Manager) — *optional; only needed for parallel Python versions. For a single-version pin, Homebrew is simpler.*
+- [x] **[YOU]** Install Python 3.13. Either via pyenv (`pyenv install 3.13 && pyenv global 3.13`) or via Homebrew (`brew install python@3.13`). This build used Homebrew (`/opt/homebrew/bin/python3.13`, currently 3.13.3).
+- [x] **[YOU]** Install Docker Desktop (required for container deployment path)
+- [x] **[YOU]** Verify Docker runs: `docker run hello-world`
+- [x] **[YOU]** Install Git and verify version is 2.30+
+- [x] **[YOU]** Configure Git identity globally with your real name and the email associated with your GitHub account
+- [x] **[YOU]** Install AWS CLI v2 *(aws-cli/2.27.20 installed via Homebrew)*
+- [x] **[YOU]** Install your editor of choice with TypeScript, Python, ESLint, Prettier, and Ruff extensions
 
 ### Section B: GitHub setup
 
-- [ ] **[YOU]** Confirm GitHub account exists with the email matching your Git identity
-- [ ] **[YOU]** Enable two-factor authentication on GitHub if not already enabled
-- [ ] **[YOU]** Create (or rename existing) public repository as `sentiment-analyzer`
-- [ ] **[YOU]** Initialize the repository with a README, MIT license, and no `.gitignore` (a custom one is added in Section C)
-- [ ] **[YOU]** If the repository was initialized on `master`, rename to `main`:
+- [x] **[YOU]** Confirm GitHub account exists with the email matching your Git identity
+- [x] **[YOU]** Enable two-factor authentication on GitHub if not already enabled
+- [x] **[YOU]** Create (or rename existing) public repository as `sentiment-analyzer` *(remote registered as `Sentiment-Analyzer` with capital S — minor case drift from the spec slug; rename via GitHub Settings if strict lowercase is wanted)*
+- [x] **[YOU]** Initialize the repository with a README, MIT license, and no `.gitignore` (a custom one is added in Section C) *(bypassed — repo was scaffolded locally first, then `origin` was added)*
+- [x] **[YOU]** If the repository was initialized on `master`, rename to `main`:
   ```
   git branch -m master main
   git push -u origin main
   ```
-  Then set `main` as the default branch in GitHub Settings and delete the old `master` branch on the remote.
-- [ ] **[YOU]** Clone the repository to your local machine
+  Then set `main` as the default branch in GitHub Settings and delete the old `master` branch on the remote. *(Not applicable — local branch was created as `main` from the start.)*
+- [x] **[YOU]** Clone the repository to your local machine *(N/A — local working tree pre-existed; `origin` was added with `git remote add` instead. Local `main` is currently one commit ahead of `origin/main` and unpushed.)*
 
 ### Section C: Repository scaffolding
 
-- [ ] Create top-level folders: `frontend/`, `backend/`, `docs/`, `.github/workflows/`
-- [ ] Add a multi-language `.gitignore` covering Node, Python, Docker, and common IDE files
-- [ ] Replace the auto-generated README with a project overview written from scratch covering: one-line description, screenshot placeholder, live demo link placeholder, tech stack, local setup instructions, architecture summary. Real content fills in during Phase 6; placeholders are fine for now.
-- [ ] Add `docs/project-plan.md` (the high-level roadmap)
-- [ ] Add `docs/phase1-foundation.md` (this document)
-- [ ] Add `docs/decision-log.md` and seed it with the first entry: a summary of the technical choices in this Decision Record and the reasoning
-- [ ] Commit and push: "Phase 1: initial repository scaffolding"
+- [x] Create top-level folders: `frontend/`, `backend/`, `docs/`, `.github/workflows/`
+- [x] Add a multi-language `.gitignore` covering Node, Python, Docker, and common IDE files
+- [x] Replace the auto-generated README with a project overview written from scratch covering: one-line description, screenshot placeholder, live demo link placeholder, tech stack, local setup instructions, architecture summary. Real content fills in during Phase 6; placeholders are fine for now.
+- [x] Add `docs/project-plan.md` (the high-level roadmap)
+- [x] Add `docs/phase1-foundation.md` (this document)
+- [x] Add `docs/decision-log.md` and seed it with the first entry: a summary of the technical choices in this Decision Record and the reasoning
+- [x] Commit and push: "Phase 1: initial repository scaffolding" *(committed and pushed at `00fd4c0`. Note: a later commit `1edb65e` with Python 3.13 pin doc updates remains unpushed.)*
 
 ### Section D: AWS account preparation
 
-- [ ] **[YOU]** Create an AWS account if one does not exist, or log into your existing personal account
-- [ ] **[YOU]** Enable MFA on the root account immediately
-- [ ] **[YOU]** Confirm there are no access keys on the root account; if any exist, delete them
-- [ ] **[YOU]** Create an IAM user named `sentiment-dev` with programmatic and console access
-- [ ] **[YOU]** Attach these AWS managed policies to the IAM user:
+- [x] **[YOU]** Create an AWS account if one does not exist, or log into your existing personal account *(account `323336951250`)*
+- [x] **[YOU]** Enable MFA on the root account immediately
+- [x] **[YOU]** Confirm there are no access keys on the root account; if any exist, delete them *(verified: `AccountAccessKeysPresent = 0`)*
+- [x] **[YOU]** Create an IAM user named `sentiment-dev` with programmatic and console access
+- [x] **[YOU]** Attach these AWS managed policies to the IAM user *(attached via group `sentiment-dev-group`, which is fine — group-based attachment is cleaner than direct):*
   - `AWSLambda_FullAccess`
   - `AmazonEC2ContainerRegistryFullAccess`
   - `CloudWatchLogsFullAccess`
   - `IAMReadOnlyAccess`
-- [ ] **[YOU]** Enable MFA on the IAM user
-- [ ] **[YOU]** Generate an access key pair for the IAM user; save it in a password manager (NEVER commit to Git)
-- [ ] **[YOU]** Run `aws configure` locally with the access keys and region `us-east-1`
-- [ ] **[YOU]** Verify access: `aws sts get-caller-identity` returns the IAM user ARN
+- [x] **[YOU]** Enable MFA on the IAM user *(virtual MFA registered 2026-05-06)*
+- [x] **[YOU]** Generate an access key pair for the IAM user; save it in a password manager (NEVER commit to Git)
+- [x] **[YOU]** Run `aws configure` locally with the access keys and region `us-east-1`
+- [x] **[YOU]** Verify access: `aws sts get-caller-identity` returns the IAM user ARN *(returns `arn:aws:iam::323336951250:user/sentiment-dev`)*
 - [ ] **[YOU]** Set up a billing alert at $5/month threshold via CloudWatch Billing (must be done in `us-east-1`)
 - [ ] **[YOU]** Confirm the alert email arrives in your inbox by testing the SNS subscription
 
 ### Section E: Model exploration
 
-- [ ] Create `backend/explore/` as a scratch directory (not part of the deployable code)
-- [ ] Set up a Python virtual environment in `backend/`: `python -m venv .venv` (uses Python 3.13 via pyenv)
-- [ ] Activate the virtual environment
-- [ ] Install Transformers, PyTorch (CPU version), and YAKE
-- [ ] Write a one-off script that loads both models and runs them on sample inputs
-- [ ] Confirm the sentiment model outputs three labels with probabilities summing to ~1
-- [ ] Confirm the emotion model outputs seven categories with probabilities summing to ~1
-- [ ] Confirm YAKE extracts reasonable keywords from sample text
-- [ ] Note the size of each downloaded model (check `~/.cache/huggingface/`)
-- [ ] Time how long inference takes for a single input on your laptop
+- [x] Create `backend/explore/` as a scratch directory (not part of the deployable code)
+- [x] Set up a Python virtual environment in `backend/`: `python -m venv .venv` (uses Python 3.13 — via pyenv or Homebrew)
+- [x] Activate the virtual environment
+- [x] Install Transformers, PyTorch (CPU version), and YAKE
+- [x] Write a one-off script that loads both models and runs them on sample inputs *(`backend/explore/evaluate_corpus.py`)*
+- [x] Confirm the sentiment model outputs three labels with probabilities summing to ~1
+- [x] Confirm the emotion model outputs seven categories with probabilities summing to ~1
+- [x] Confirm YAKE extracts reasonable keywords from sample text *(works on Python 3.13; failed on 3.14 due to `networkx` incompatibility — see decision-log)*
+- [x] Note the size of each downloaded model (check `~/.cache/huggingface/`)
+- [x] Time how long inference takes for a single input on your laptop *(82 ms post-warmup, well under the 5-second red-flag threshold)*
 
 ### Section F: Test corpus creation
 
-- [ ] Create `backend/test_inputs.json`
-- [ ] Add 3 clear positive examples
-- [ ] Add 3 clear negative examples
-- [ ] Add 3 neutral / factual examples
-- [ ] Add 3 sarcastic examples (expect model failure here)
-- [ ] Add 3 mixed-sentiment examples
-- [ ] Add 2 negation examples (e.g., "not bad at all", "I can't stop using this")
-- [ ] Add 2 internet-shorthand examples (e.g., "lmao this is fire ngl")
-- [ ] Add edge cases: single word, single emoji, all caps, very long passage, empty string
-- [ ] Run all examples through both models and record results in `docs/model-evaluation.md`
-- [ ] Note any surprising failures explicitly in the evaluation doc — these become honest README content
+- [x] Create `backend/test_inputs.json`
+- [x] Add 3 clear positive examples
+- [x] Add 3 clear negative examples
+- [x] Add 3 neutral / factual examples
+- [x] Add 3 sarcastic examples (expect model failure here)
+- [x] Add 3 mixed-sentiment examples
+- [x] Add 2 negation examples (e.g., "not bad at all", "I can't stop using this")
+- [x] Add 2 internet-shorthand examples (e.g., "lmao this is fire ngl")
+- [x] Add edge cases: single word, single emoji, all caps, very long passage, empty string
+- [x] Run all examples through both models and record results in `docs/model-evaluation.md`
+- [x] Note any surprising failures explicitly in the evaluation doc — these become honest README content *(all 3 sarcastic + all 3 mixed cases failed as anticipated; 1 long-passage edge case also flipped to positive)*
 
 ### Section G: Deployment path verification
 
-- [ ] Create a stub `backend/Dockerfile` based on `public.ecr.aws/lambda/python:3.13` (ARM64)
-- [ ] Add a placeholder handler that returns a fixed JSON response (no model loading yet)
+- [x] Create a stub `backend/Dockerfile` based on `public.ecr.aws/lambda/python:3.13` (ARM64) *(base image is multi-arch; on Apple Silicon it pulls arm64 by default — Phase 2 will pin `--platform=linux/arm64` explicitly for production builds. Note: the Python 3.13 Lambda image is on Amazon Linux 2023, so use `dnf` not `yum` if extra OS packages are added later.)*
+- [x] Add a placeholder handler that returns a fixed JSON response (no model loading yet)
 - [ ] Build the image locally: `docker build -t sentiment-analyzer-stub backend/`
 - [ ] Verify the build succeeds and note the final image size
 - [ ] Run the image locally and confirm the handler responds correctly
