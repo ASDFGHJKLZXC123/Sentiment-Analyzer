@@ -1,0 +1,9 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: requires real model loading via the local Hugging Face cache or a built RIE container",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:transformers",
+    "ignore::FutureWarning:transformers",
+]

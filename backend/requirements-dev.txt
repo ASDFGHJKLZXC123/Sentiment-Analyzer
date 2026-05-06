@@ -1,5 +1,12 @@
-# Local model-exploration dependencies (NOT shipped to Lambda).
-# Used by backend/explore/*.py and the corpus evaluation script.
-transformers>=4.44
-torch
-yake
+# Local dev-venv dependencies. NOT shipped to Lambda — the Lambda image
+# installs only requirements.txt and is built without this file.
+#
+# Use:
+#   python3.13 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+#
+# pytest runs the fast tier (no transformer weights). The slow tier
+# (`pytest -m slow`) loads real models and needs the runtime deps from
+# requirements.txt, hence the include.
+-r requirements.txt
+pytest==9.0.3
+pip-tools==7.5.3

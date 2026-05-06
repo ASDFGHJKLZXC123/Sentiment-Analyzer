@@ -1,0 +1,26 @@
+# Phase 2 Lambda runtime dependencies — direct pins.
+# Generate requirements.txt via:
+#   .venv/bin/pip-compile --resolver=backtracking --output-file=requirements.txt requirements.in
+#
+# Direct pins are exact; transitive deps (e.g. networkx via yake) are
+# resolved by pip-compile and locked into requirements.txt.
+#
+# Why the PyTorch CPU index: AWS Lambda has no GPU. The default torch
+# wheel from PyPI bundles ~2.8 GB of NVIDIA CUDA libs (cuBLAS, cuDNN,
+# cuSPARSE, cuFFT, etc.) and ~600 MB of Triton — entirely dead weight
+# on Lambda's CPU runtime. The PyTorch CPU index serves the same
+# version (2.11.0+cpu) without the CUDA payload, cutting the deps
+# stage from ~3.1 GB to ~400 MB. PEP 440 makes 2.11.0+cpu sort above
+# 2.11.0 with the same constraint string.
+#
+# transformers==5.8.0 is the Phase 2 candidate; auto-fallback to 5.7.0
+# if the deps-only or slow smoke gates fail (per docs/phase2-backend.md).
+# huggingface_hub is pinned directly because Hub 1.x renamed/removed
+# parameters used by snapshot_download (e.g. local_dir_use_symlinks).
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+transformers==5.8.0
+torch==2.11.0
+yake==0.7.3
+huggingface_hub==1.13.0

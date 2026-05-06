@@ -1,0 +1,36 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Phase 1 model-exploration scripts — not deployed
+explore/
+
+# Tests run outside the image (fast tier on host, slow tier against RIE)
+tests/
+
+# Local developer files
+*.md
+.env
+.env.*
+.DS_Store
+.git/
+.gitignore
+.dockerignore
+Dockerfile
+
+# Build artifacts and lockfile sources — only requirements.txt is
+# needed inside the image
+requirements.in
+requirements-dev.txt
+pyproject.toml
+
+# Local timing / profiling outputs
+*.prof
+*.json.bak
+test_inputs.json

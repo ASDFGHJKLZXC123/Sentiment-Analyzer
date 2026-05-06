@@ -256,3 +256,76 @@ Applied the external review comments that materially improve the project plan an
 **Changes not accepted as written:**
 
 - Did not automatically switch the project from Node 22 to Node 24. Node 24 is the more current Active LTS line, but Node 22 remains supported through 2027-04-30 and was already installed locally. The plan now states the tradeoff instead of implying Node 22 is the most current LTS line.
+
+---
+
+## 2026-05-06 — Phase 2 dependency pins committed
+
+`backend/requirements.in` and the `pip-compile`-generated `backend/requirements.txt` now reflect the Phase 2 candidate pins. All four direct pins resolve clean on Python 3.13 / Linux ARM64 with no broken transitives (`pip check` clean inside the deps-only image). The Phase 2 spec's auto-fallback to `transformers==5.7.0` was not triggered.
+
+| Direct pin | Version | Source |
+|---|---|---|
+| `transformers` | `5.8.0` | Latest stable per PyPI on 2026-05-06; spec candidate (line 52 of `phase2-backend.md`) |
+| `torch` | `2.11.0` | Spec value; resolved as `2.11.0+cpu` via PyTorch CPU index (see next entry) |
+| `huggingface_hub` | `1.13.0` | Latest 1.x per PyPI on 2026-05-06; pinned directly because Hub 1.x changed `snapshot_download` parameters |
+| `yake` | `0.7.3` | Phase 1 verified; same as Phase 1 explore env |
+
+Transitive `networkx==3.6.1` is left to `pip-compile` (resolved via both yake and torch). The spec only required a direct pin for `huggingface_hub`. `pytest==9.0.3` and `pip-tools==7.5.3` live in `requirements-dev.txt` and never enter the image.
+
+---
+
+## 2026-05-06 — Phase 2 image-size fix: PyTorch CPU index
+
+The first deps-only image build at `transformers==5.8.0` / `torch==2.11.0` weighed **3.13 GB**, of which **2.8 GB was unused NVIDIA CUDA libraries** (`nvidia-cublas`, `nvidia-cudnn-cu13`, `nvidia-cufft`, `nvidia-cusparse`, `nvidia-cusolver`, etc.) plus **600 MB of Triton** (a GPU-targeting compiler). AWS Lambda has no GPU; this is dead weight.
+
+Phase 1 never noticed this because the local explore venv runs on macOS arm64, where the regular PyPI `torch==2.11.0` wheel is already CPU-only. The CUDA payload only ships in the `manylinux_2_28_aarch64` (and x86) wheels on PyPI.
+
+**Fix:** added `--extra-index-url https://download.pytorch.org/whl/cpu` to `requirements.in`. PEP 440 makes `2.11.0+cpu` (from the CPU index) sort above `2.11.0` (from PyPI) for the same constraint string, so `pip` selects the CPU-only wheel automatically. macOS dev environments still get their normal torch wheel because the CPU index doesn't ship macOS wheels under the same name pattern.
+
+Outcome:
+- Deps-only image: **3.13 GB → 452 MB** (2.7 GB saved)
+- Full image (deps + 1.5 GB of model snapshots + app code): **1.85 GB total** (well under Lambda's 10 GB uncompressed limit)
+- Cold pull and Lambda image cache populated faster on first deploy
+
+This deviates from a literal reading of the Phase 2 spec (which only mentions PyPI), but stays within its intent (small, fast, ARM64 image that boots quickly). Recorded as a deliberate Phase 2 decision.
+
+---
+
+## 2026-05-06 — Phase 2 model revision SHAs
+
+Pinned via Dockerfile `ENV` declarations (single source of truth for build, runtime logging, and slow tests). Fetched from `https://huggingface.co/api/models/{repo}` on 2026-05-06.
+
+| Model | Repo | Revision SHA | Latest commit date |
+|---|---|---|---|
+| Sentiment | `cardiffnlp/twitter-roberta-base-sentiment-latest` | `3216a57f2a0d9c45a2e6c20157c20c49fb4bf9c7` | 2025-08-04 (README update) |
+| Emotion | `j-hartmann/emotion-english-distilroberta-base` | `0e1cd914e3d46199ed785853e12b57304e04178b` | 2023-01-02 (README update) |
+
+Both SHAs are emitted in the cold-start `INFO` log line at module init, captured by both fast-tier (`test_cold_start_log_contains_both_revision_shas`) and slow-tier (`test_cold_start_log_with_real_models`) pytest checks.
+
+---
+
+## 2026-05-06 — Phase 2 contract revision committed in code
+
+The Phase 2 backend now implements the contract revisions that `phase2-backend.md` v4 specified:
+
+- `METHOD_NOT_ALLOWED` (`405`) for non-`POST` methods, with `Allow: POST` response header. `OPTIONS` requests reaching the handler in tests follow the same rule; in production CORS preflight is answered by the Function URL configuration before the handler runs.
+- `INPUT_TOO_LONG` returns `422` (not `413`). The 5000-character limit is a parsed-field business rule, not a transport-layer body-size violation, so `422` is the correct semantic. Phase 1's earlier doc still mentions `413` for the same condition; the Phase 2 implementation is the source of truth.
+- `INVALID_JSON` (`400`) covers missing body, malformed JSON, base64 decode failures, and parsed non-object values (arrays, scalars).
+- `EMPTY_INPUT` (`400`) covers missing/empty/whitespace-only `text` plus wrong-type `text` (numbers, lists, booleans). Spec language `text missing` is interpreted broadly to include "not a usable string".
+- Validation precedence is contractual and enforced in code: method → optional base64 decode → JSON parse + object check → schema/business validation. Each precedence boundary is covered by a dedicated test in `tests/test_validation.py`.
+- Reserved-concurrency `429 Too Many Requests` is a service-generated response from Lambda Function URL when reserved concurrency is exhausted. Body and headers are AWS-owned; tests assert status code only, never the JSON envelope shape. Frontend should map `429` to a `THROTTLED` user state without parsing as the handler error envelope.
+
+47 pytest cases cover the contract (39 fast + 8 slow); all 4 RIE smoke cases against the built container produce the expected status codes and bodies.
+
+---
+
+## 2026-05-06 — Phase 2 start with billing alert deferred (deviation)
+
+`phase2-backend.md` "Pre-flight (Phase 1 closeout)" required an AWS billing alert at $5/month plus an SNS subscription email confirmation before Phase 2 begins. The Phase 1 IAM user `sentiment-dev` lacks `budgets:ViewBudget`, `cloudwatch:DescribeAlarms`, and `SNS:*` (verified — all three return AccessDenied), so the budget would need to be created via the AWS console as the root user. Rather than block Phase 2, the user opted to proceed with the build under the existing cost guardrails and address billing alerts later.
+
+**Compensating controls in effect:**
+- Reserved concurrency = 10 caps parallel invocations. With 30-second Lambda timeout and ARM64 2048 MB pricing, worst-case sustained spend is bounded to a low single-digit dollar/hour rate even under hostile traffic.
+- ECR storage cost is negligible at the ~1.85 GB image size.
+- CloudWatch Logs retention is set to 14 days (Phase 2 spec line 425), so log storage doesn't grow unbounded.
+
+**Follow-up:** when the user has root-console time, add the $5/month budget + SNS topic + confirmed email subscription, then update this entry with the date and budget ARN. Until then, Phase 1 Section H is treated as closed-with-deviation for the purpose of the `phase-1-complete` tag (already applied at commit `235cd56`, 2026-05-06).
