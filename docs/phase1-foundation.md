@@ -184,7 +184,7 @@ Phase 1 is complete when:
 - [x] Both models have been downloaded and tested locally with the test corpus *(see `docs/model-evaluation.md`: 16/23 = 70% sentiment accuracy, 82 ms post-warmup inference)*
 - [x] Decision log entry is written for the model choices
 - [x] Frontend hosting target (GitHub Pages) is confirmed
-- [ ] Deployment path (container) is confirmed by successful local Docker build of an empty test image *(stub `Dockerfile` and handler exist; build-and-run smoke test not yet verified)*
+- [x] Deployment path (container) is confirmed by successful local Docker build of an empty test image *(image built at 196 MB content / 809 MB on disk; Lambda RIE smoke test returned 200 with the expected envelope and the body parsed to `{ok: true, phase: 1, ...}`; runtime init 217 ms, handler invoke 5.3 ms; image torn down after verification)*
 
 ---
 
@@ -278,10 +278,10 @@ Work through these in order. Do not skip ahead — later steps depend on earlier
 
 - [x] Create a stub `backend/Dockerfile` based on `public.ecr.aws/lambda/python:3.13` (ARM64) *(base image is multi-arch; on Apple Silicon it pulls arm64 by default — Phase 2 will pin `--platform=linux/arm64` explicitly for production builds. Note: the Python 3.13 Lambda image is on Amazon Linux 2023, so use `dnf` not `yum` if extra OS packages are added later.)*
 - [x] Add a placeholder handler that returns a fixed JSON response (no model loading yet)
-- [ ] Build the image locally: `docker build -t sentiment-analyzer-stub backend/`
-- [ ] Verify the build succeeds and note the final image size
-- [ ] Run the image locally and confirm the handler responds correctly
-- [ ] Tear down the test image; this was a smoke test only
+- [x] Build the image locally: `docker build -t sentiment-analyzer-stub backend/`
+- [x] Verify the build succeeds and note the final image size *(196 MB content / 809 MB on disk — well under Lambda's 10 GB container ceiling, with comfortable headroom for the ~2–3 GB Phase 2 image)*
+- [x] Run the image locally and confirm the handler responds correctly *(invoked via Lambda RIE at `http://localhost:9000/2015-03-31/functions/function/invocations`; returned `200` with `Content-Type: application/json` and `Access-Control-Allow-Origin: *`; body parsed to `{ok: true, phase: 1, message, respondedAt}`; runtime init 217 ms, handler invoke 5.3 ms — well under the 5-second red-flag threshold)*
+- [x] Tear down the test image; this was a smoke test only *(`docker rmi sentiment-analyzer-stub:latest` — image deleted, no containers left)*
 
 ### Section H: Phase 1 closeout
 
