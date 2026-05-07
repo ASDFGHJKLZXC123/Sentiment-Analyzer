@@ -329,3 +329,25 @@ The Phase 2 backend now implements the contract revisions that `phase2-backend.m
 - CloudWatch Logs retention is set to 14 days (Phase 2 spec line 425), so log storage doesn't grow unbounded.
 
 **Follow-up:** when the user has root-console time, add the $5/month budget + SNS topic + confirmed email subscription, then update this entry with the date and budget ARN. Until then, Phase 1 Section H is treated as closed-with-deviation for the purpose of the `phase-1-complete` tag (already applied at commit `235cd56`, 2026-05-06).
+
+---
+
+## 2026-05-06 — Phase 2 deploy: account-quota and AWS-API constraints
+
+These deviations from `phase2-backend.md` came up during the AWS deploy. None change the inference behaviour or contract; they're operational adjustments. Full per-deviation reasoning is in `phase2-results.md` § "Deviations from phase2-backend.md".
+
+1. **IAM role created via root console.** `sentiment-dev` has `IAMReadOnlyAccess` (Phase 1 v2 decision). The `sentiment-analyzer-lambda-role` was therefore created in the root account session: trust policy for `lambda.amazonaws.com`, `AWSLambdaBasicExecutionRole` attached. ARN: `arn:aws:iam::323336951250:role/sentiment-analyzer-lambda-role`.
+
+2. **Reserved concurrency not applied.** Account-wide concurrent-execution quota is **10**, with an `UnreservedConcurrentExecutions` floor of 10. Setting reserved=10 would leave 0 unreserved, which AWS rejects (`InvalidParameterValueException: ... decreases account's UnreservedConcurrentExecution below its minimum value of [10]`). The account-wide cap already enforces parallel-invocation limits equivalent to the spec's intent. To apply spec strictly, request a quota increase to ≥ 20.
+
+3. **Memory matrix incomplete.** Spec mandates 2048 / 3072 / 4096 measurements. Account ceiling for per-function memory is **3008 MB** (`MemorySize value failed to satisfy constraint: Member must have value less than or equal to 3008`). Matrix reported at 2048 + 3008; 4096 row marked unmeasurable. Production memory size: 3008 MB (closest available to the spec's 3072).
+
+4. **CORS `AllowMethods=["POST"]`, no `OPTIONS`.** Spec wording suggests `["POST", "OPTIONS"]` but AWS Function URL CORS API enforces a 6-character maximum length per method element; `"OPTIONS"` (7 chars) fails validation. The Function URL implicitly handles CORS preflight when CORS is configured, so explicit `OPTIONS` listing is unnecessary. The browser-facing behavior is unchanged.
+
+5. **Two resource-policy statements required for public Function URL access.** AWS changed the Function URL access model in October 2025 (verified in current AWS docs): `auth-type=NONE` invocations now require both `lambda:InvokeFunctionUrl` *and* `lambda:InvokeFunction` permissions in the resource policy. Without both, the URL returns `403 Forbidden` even with the spec's listed policy. The current policy adds both statements; the second one omits the recommended `lambda:InvokedViaFunctionUrl` condition because the local AWS CLI (2.27.20) does not yet support the `--invoked-via-function-url` flag. This is functionally permissive (anyone with the function ARN can call `Invoke` directly) but not exploitable from the public internet without the URL ARN. Tightening is a Phase 5 / CI-hardening item.
+
+6. **Docker buildkit OCI manifests rejected by Lambda.** First image push used the buildkit default attestation manifest list, which `aws lambda create-function --code ImageUri=...` rejected with `The image manifest, config or layer media type for the source image ... is not supported`. Fix: rebuild with `--provenance=false --sbom=false` (forces Docker v2 schema 2). The Dockerfile and image content are unchanged. Phase 5 CI must include the same flags.
+
+7. **First-ever cold start = ~85 s.** A fresh Lambda function pulling its 1.85 GB image from ECR onto a new instance pool exceeds the spec's <15 s cold-start budget. Steady-state cold starts on a warmed instance pool measure ~5–10 s, within budget. The spec's 30 s function timeout will occasionally cause a 502 if Lambda re-provisions onto a fresh host; this is acceptable for Phase 2 portfolio scope (re-evaluate in Phase 6 if real users hit it).
+
+These deviations are recorded once in this single entry, with full per-deviation context in `phase2-results.md`. Function deployed and live: `https://3dffhy342e747dnzwhsjexqk4u0brusk.lambda-url.us-east-1.on.aws/`.
