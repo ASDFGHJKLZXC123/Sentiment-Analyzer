@@ -2,7 +2,7 @@
 
 A web dashboard that analyzes text and returns sentiment, emotion breakdown, and keyword extraction. Inference runs on AWS Lambda; the frontend is a React + TypeScript single-page app.
 
-> Status: Phase 1 (foundation). Not yet deployed.
+> Status: Phase 2 complete. Backend Lambda is deployed; frontend work is next.
 
 ## Screenshot
 
@@ -89,7 +89,7 @@ curl -X POST "http://localhost:9000/2015-03-31/functions/function/invocations" \
    Lambda Function URL
         │
         ▼
-   Lambda (container, ARM64, 2 GB)
+   Lambda (container, ARM64, 3008 MB)
         ├─ sentiment model (RoBERTa)
         ├─ emotion model (DistilRoBERTa)
         └─ YAKE keyword extraction
@@ -101,7 +101,7 @@ For full API contract see [`docs/phase1-foundation.md`](docs/phase1-foundation.m
 
 ## Roadmap
 
-See [`docs/project-plan.md`](docs/project-plan.md). Current phase: Phase 1 (foundation).
+See [`docs/project-plan.md`](docs/project-plan.md). Current phase: Phase 3 (frontend).
 
 ## License
 

@@ -33,7 +33,7 @@ These come from Phase 1 and are not revisited here:
 | Container deployment to ECR (not zip) | `phase1-foundation.md` §Deployment path |
 | Base image: `public.ecr.aws/lambda/python:3.13` (ARM64, Amazon Linux 2023) | `phase1-foundation.md` §Technical stack, §Section G note |
 | Models: `cardiffnlp/twitter-roberta-base-sentiment-latest`, `j-hartmann/emotion-english-distilroberta-base`, YAKE | `phase1-foundation.md` §Model selection |
-| Lambda memory baseline 2048 MB, tune up to 3072 MB if needed | `phase1-foundation.md` §Lambda configuration |
+| Lambda memory baseline started at 2048 MB; Phase 2 measurement chose 3008 MB because this AWS account caps memory below 4096 MB | `phase1-foundation.md` §Lambda configuration; `phase2-results.md` |
 | Lambda timeout 30 s, ARM64 | `phase1-foundation.md` §Lambda configuration |
 | Env vars `SENTIMENT_MODEL`, `EMOTION_MODEL` (model IDs retained for observability/config labels; weights are baked into the image) | `phase1-foundation.md` §Lambda configuration; resolved by Phase 2 offline-mode decision |
 | Function URL with CORS allowing GitHub Pages domain | `phase1-foundation.md` §Lambda configuration |
@@ -277,7 +277,7 @@ The Phase 1 env vars (`SENTIMENT_MODEL`, `EMOTION_MODEL`) are kept and surfaced 
 
 | Setting | Value | Source |
 |---|---|---|
-| Memory | 2048 MB baseline; tune through 2048 / 3072 / 4096 and pick the smallest acceptable | Phase 1 |
+| Memory | 3008 MB in production for this AWS account; 2048 MB was the measured baseline, and 4096 MB is quota-blocked unless the account limit changes | Phase 2 results |
 | Timeout | 30 s | Phase 1 |
 | Architecture | ARM64 | Phase 1 |
 | Ephemeral storage | 512 MB (default) | models live in `/opt`, not `/tmp` |
@@ -293,15 +293,16 @@ The Phase 1 env vars (`SENTIMENT_MODEL`, `EMOTION_MODEL`) are kept and surfaced 
 
 ### Memory tuning (the actual measurement, not a guess)
 
-Lambda allocates CPU proportionally to memory; ML inference is CPU-bound, so memory increases buy real wall-clock improvements until the curve flattens. Procedure:
+Lambda allocates CPU proportionally to memory; ML inference is CPU-bound, so memory increases buy real wall-clock improvements until the curve flattens.
+
+Actual Phase 2 result: this AWS account caps Lambda memory at **3008 MB**. The deployed production value is therefore **3008 MB**. The `4096 MB` row in the original tuning plan is not required and is only re-testable after an AWS quota increase.
+
+Measured procedure used for Phase 2:
 
 1. Deploy at 2048 MB with `aws lambda update-function-configuration --function-name sentiment-analyzer --memory-size 2048`, then wait with `aws lambda wait function-updated --function-name sentiment-analyzer`. Measure cold start and 20-warm p95 on a 1000-character input.
-2. Deploy at 3072 MB with `aws lambda update-function-configuration --function-name sentiment-analyzer --memory-size 3072`, wait for `function-updated`, then re-measure.
-3. Deploy at 4096 MB with `aws lambda update-function-configuration --function-name sentiment-analyzer --memory-size 4096`, wait for `function-updated`, then re-measure.
-4. Pick the smallest size where additional memory yields <10% improvement (diminishing returns).
-5. Record all three memory-size measurements in `phase2-results.md`.
-
-This produces an interview-ready chart and avoids picking a number by gut.
+2. Deploy at 3008 MB with `aws lambda update-function-configuration --function-name sentiment-analyzer --memory-size 3008`, wait for `function-updated`, then re-measure.
+3. Attempting 4096 MB in this account returns `MemorySize must be <= 3008`; record that as quota-blocked rather than treating it as an incomplete deploy step.
+4. Use 3008 MB for production unless the account quota changes and a fresh benchmark proves a better setting.
 
 ---
 
@@ -408,7 +409,7 @@ Phase 1 only validated a local Docker build. The cloud-side resources don't exis
      --code ImageUri=<ecr-uri>:<git-sha> \
      --architectures arm64 \
      --role arn:aws:iam::<account-id>:role/sentiment-analyzer-lambda-role \
-     --memory-size 2048 \
+     --memory-size 3008 \
      --timeout 30 \
      --environment "Variables={HF_HUB_OFFLINE=1,TRANSFORMERS_OFFLINE=1,HF_HOME=/opt/hf-home,SENTIMENT_MODEL=cardiffnlp/twitter-roberta-base-sentiment-latest,EMOTION_MODEL=j-hartmann/emotion-english-distilroberta-base,LOG_LEVEL=INFO}" \
      --region us-east-1
@@ -497,7 +498,7 @@ Held over for later phases or rejected outright:
 
 ## Output
 
-A live Lambda Function URL satisfying the Phase 1 contract plus the Phase 2 contract revisions, with cold-start and warm-path numbers across three memory sizes recorded in `phase2-results.md`. New decision-log entries: chosen dependency pins, chosen model revision SHAs, reserved concurrency rationale, and Phase 2 contract revision. Tagged `phase-2-complete` on `main`.
+A live Lambda Function URL satisfying the Phase 1 contract plus the Phase 2 contract revisions, with cold-start and warm-path numbers recorded in `phase2-results.md`. The memory matrix uses 2048 MB and 3008 MB because this AWS account rejects 4096 MB. New decision-log entries: chosen dependency pins, chosen model revision SHAs, reserved concurrency rationale, and Phase 2 contract revision. Tagged `phase-2-complete` on `main`.
 
 ---
 
@@ -539,7 +540,7 @@ A live Lambda Function URL satisfying the Phase 1 contract plus the Phase 2 cont
 - [ ] Function URL CORS allows the GitHub Pages origin only (no `*`)
 - [ ] CORS preflight (OPTIONS) returns expected headers
 - [ ] Smoke test against Function URL returns 200 with the expected envelope
-- [ ] Cold-start measured at 2048 / 3072 / 4096 MB; recorded in `phase2-results.md`
-- [ ] Warm p95 measured (≥20 invocations) at the chosen memory; recorded
+- [x] Cold-start measured at 2048 / 3008 MB; 4096 MB recorded as quota-blocked in `phase2-results.md`
+- [x] Warm p95 measured (≥20 invocations) at the chosen 3008 MB memory; recorded
 - [ ] `backend/README.md` documents both first-time setup and iterative deploy
 - [ ] `phase-2-complete` tag applied

@@ -156,7 +156,7 @@ aws lambda create-function \
   --code ImageUri=<account-id>.dkr.ecr.us-east-1.amazonaws.com/sentiment-analyzer:$SHA \
   --architectures arm64 \
   --role arn:aws:iam::<account-id>:role/sentiment-analyzer-lambda-role \
-  --memory-size 2048 \
+  --memory-size 3008 \
   --timeout 30 \
   --environment "Variables={HF_HUB_OFFLINE=1,TRANSFORMERS_OFFLINE=1,HF_HOME=/opt/hf-home,SENTIMENT_MODEL=cardiffnlp/twitter-roberta-base-sentiment-latest,EMOTION_MODEL=j-hartmann/emotion-english-distilroberta-base,LOG_LEVEL=INFO}" \
   --region us-east-1
@@ -235,10 +235,10 @@ Phase 5 will replace this with a GitHub Actions OIDC pipeline.
 
 ## Memory tuning
 
-Lambda allocates CPU proportional to memory; ML inference is CPU-bound. The Phase 2 spec mandates measuring at 2048 / 3072 / 4096 MB and picking the smallest size where additional memory yields <10 % p95 improvement. Procedure and matrix go in `docs/phase2-results.md`.
+Lambda allocates CPU proportional to memory; ML inference is CPU-bound. Phase 2 measured 2048 MB and 3008 MB, then kept **3008 MB** as the production value. This AWS account rejects 4096 MB (`MemorySize must be <= 3008`), so 4096 is not part of the normal deploy path unless the account quota is increased.
 
 ```bash
-for SIZE in 2048 3072 4096; do
+for SIZE in 2048 3008; do
   aws lambda update-function-configuration \
     --function-name sentiment-analyzer \
     --memory-size $SIZE \
