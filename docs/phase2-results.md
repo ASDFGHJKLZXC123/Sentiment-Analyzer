@@ -93,6 +93,7 @@ Run 2026-05-06 against the live Function URL. All four contract cases match the 
 | 405 method | `GET <url>` | `405` + `allow: POST` + `{"error":{"code":"METHOD_NOT_ALLOWED","field":"method"}}` | < 1 s |
 | 400 empty | `POST {"text":""}` | `400` + `{"error":{"code":"EMPTY_INPUT","field":"text"}}` | < 1 s |
 | 422 length | `POST {"text":"x"*5001}` | `422` + `{"error":{"code":"INPUT_TOO_LONG","field":"text"}}` | < 1 s |
+| CORS preflight | `OPTIONS <url>` with `Origin: https://asdfghjklzxc123.github.io` + `Access-Control-Request-Method: POST` + `Access-Control-Request-Headers: content-type` | `200` + `Access-Control-Allow-Origin: https://asdfghjklzxc123.github.io` + `Access-Control-Allow-Methods: POST` + `Access-Control-Allow-Headers: content-type` + `Access-Control-Max-Age: 300` + `Vary: Origin` (handled by Function URL, never reaches the handler) | < 1 s |
 
 ## Deviations from `phase2-backend.md`
 

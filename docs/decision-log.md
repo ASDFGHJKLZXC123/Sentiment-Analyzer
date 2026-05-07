@@ -351,3 +351,26 @@ These deviations from `phase2-backend.md` came up during the AWS deploy. None ch
 7. **First-ever cold start = ~85 s.** A fresh Lambda function pulling its 1.85 GB image from ECR onto a new instance pool exceeds the spec's <15 s cold-start budget. Steady-state cold starts on a warmed instance pool measure ~5–10 s, within budget. The spec's 30 s function timeout will occasionally cause a 502 if Lambda re-provisions onto a fresh host; this is acceptable for Phase 2 portfolio scope (re-evaluate in Phase 6 if real users hit it).
 
 These deviations are recorded once in this single entry, with full per-deviation context in `phase2-results.md`. Function deployed and live: `https://3dffhy342e747dnzwhsjexqk4u0brusk.lambda-url.us-east-1.on.aws/`.
+
+---
+
+## 2026-05-07 — Phase 2 closeout: billing alert in place + CORS preflight verified
+
+Two of the three Phase 2 follow-ups noted at `phase-2-complete` time are now closed.
+
+**Billing alert + SNS subscription — done.** The 2026-05-06 "Phase 2 start with billing alert deferred (deviation)" entry above is superseded. The user configured the $5/month AWS budget and confirmed the SNS subscription email via the root console. The Phase 1 Section H success criterion is now strictly met, not closed-with-deviation. No corresponding code or infrastructure change was needed — purely a console action.
+
+**CORS preflight (OPTIONS) verified against the live Function URL — done.** `phase2-backend.md` line 540 ("CORS preflight (OPTIONS) returns expected headers") was the last unverified deploy-checklist item. Run on 2026-05-07:
+
+```
+curl -i -X OPTIONS https://3dffhy342e747dnzwhsjexqk4u0brusk.lambda-url.us-east-1.on.aws/ \
+  -H 'Origin: https://asdfghjklzxc123.github.io' \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: content-type'
+```
+
+Response: `200 OK` with `Access-Control-Allow-Origin: https://asdfghjklzxc123.github.io`, `Access-Control-Allow-Methods: POST`, `Access-Control-Allow-Headers: content-type`, `Access-Control-Max-Age: 300`, and `Vary: Origin`. The Function URL handled preflight without invoking the handler — confirms the 2026-05-06 deviation entry item 4 (CORS `AllowMethods` without `OPTIONS`) is functionally equivalent to the spec's intent. Recorded in `phase2-results.md` as the fifth row of the deployed-URL smoke tests table.
+
+**Still open from `phase-2-complete`:** only the optional `lambda:InvokedViaFunctionUrl` condition tightening (CLI 2.27.20 doesn't support the flag; manual `lambda put-policy` JSON edit required). Not in `phase2-backend.md`; pulled from current AWS docs. Defer to Phase 5 (CI hardening) per the existing deviation entry.
+
+**Quota-bound items remain accepted limitations:** 4096 MB memory matrix row and reserved concurrency = 10 require AWS Service Quotas requests the user has chosen not to file.
