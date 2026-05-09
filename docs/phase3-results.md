@@ -85,7 +85,7 @@ The success-state axe scan initially reported a `color-contrast` violation on th
 
 ### Manual keyboard pass — procedure
 
-The audit prescribes a manual pass before tagging. **Not yet performed.** Procedure to run before tagging:
+The audit prescribes a manual pass before tagging. Procedure (executed 2026-05-09; see Status below):
 
 1. Reload the app at `http://localhost:5173/` with no history in localStorage.
 2. Tab through the page. Expected order: header source link → textarea → sample chips (3, when textarea empty) → Clear button → Analyze button → results region (focus only when populated) → history entries (when populated) → history Clear → footer link (none currently).
@@ -99,7 +99,7 @@ Status: **confirmed 2026-05-09**. Tab order, focus rings, focus moves on result/
 
 ### Screen reader pass — procedure
 
-Also not yet performed. Procedure: VoiceOver (macOS) or NVDA (Windows) on success and error states. Confirm:
+Procedure (executed 2026-05-09; see Status below): VoiceOver (macOS) or NVDA (Windows) on success and error states. Confirm:
 - Empty state announces "Paste some text to get started" heading.
 - Loading announces aria-busy state.
 - Success announces "Results: <Sentiment>, <pct> percent confidence" via the live region.
@@ -116,7 +116,7 @@ Spec `phase3-ui-ux.md` §13 line 360 requires confirming all 5 states match the 
 2. **Loading tier 1 (under 1.5 s).** Click Analyze. For the first ~1.5 s only the centered spinner should be visible — no skeleton, no caption.
 3. **Loading tier 3 (3–10 s).** Force a slow response (DevTools → Network → "Slow 3G" throttle) and submit. At ≥ 3 s confirm: skeleton bars (badge + chart + keyword) + the caption "Warming up the model — this happens on the first request." Caption uses `--color-focus` left border on a light blue background.
 4. **Success.** Submit valid input. Confirm: sentiment badge (color + icon + label + percentage), 7 emotion bars sorted descending with `<details>` table fallback (auto-opens at narrow widths), keyword chips with top-3 sized `--text-lg`, next-4 `--text-base`, rest `--text-sm`. Focus moves to the SR-only results heading.
-5. **Error (5xx).** Temporarily set `VITE_LAMBDA_URL` to an unreachable host (e.g., `https://example.invalid/`) and reload. Submit. Confirm: red banner with copy "Something went wrong on our end. This is rare — please try again." + "Try again" button + focus moves to the banner. Restore the env var when done.
+5. **Error.** Force any error-class. Acceptable triggers: set `VITE_LAMBDA_URL` to an unreachable host (`network` kind), DevTools → Network → "Offline" (`network`), submit during a Lambda cold start that exceeds 30 s (`timeout`), or hit a deployed 5xx (`server`). Confirm: red banner with the spec copy matching the `ApiError` kind ("Can't reach the server…", "That took longer than expected. The model may be cold — try again.", or "Something went wrong on our end. This is rare — please try again."), "Try again" button visible, focus moves to the banner. (The `kind: 'http'` 4xx variant has no retry button; covered by unit tests in `ResultsPanel.test.tsx`.)
 
 Status: **confirmed 2026-05-09**. Empty state confirmed via screenshot 2026-05-08. Loading-tier-1 (spinner) and loading-tier-3 (skeleton + "Warming up the model" caption) observed during a cold-start cycle on 2026-05-09. Success state confirmed (sentiment badge + 7 emotion bars including `neutral` + keyword chips, focus moved to results heading). Error state confirmed via the cold-start timeout banner — exact `kind: 'timeout'` copy ("That took longer than expected. The model may be cold — try again.") with focus moved to the alert.
 
@@ -130,6 +130,17 @@ Spec `phase3-ui-ux.md` §13 line 363 requires verifying reduced-motion in DevToo
 4. Submit valid input to land a fresh history entry. Confirm the 220 ms `is-new` background flash is suppressed (the row appears at its settled background color, no fade).
 
 Status: **confirmed 2026-05-09**. With `prefers-reduced-motion: reduce` emulated in DevTools, the loading skeleton appeared and resolved without sustained shimmer animation ("popped out real quick").
+
+### Other UX §13 items (no procedure required)
+
+The remaining `phase3-ui-ux.md` §13 line items are satisfied by code/tests rather than manual checks; recorded here so the §13 mapping is complete.
+
+| §13 item | Where it's satisfied |
+|---|---|
+| Sample chips fill the textarea and focus Submit (line 361) | `frontend/src/components/TextInput/TextInput.tsx:55-58` (`fillSample` calls `onChange(text)` then `submitRef.current?.focus()`); test in `TextInput.test.tsx:101-117` covers chip click → onChange called with the chip's text. |
+| Privacy line in footer, verbatim (line 366) | `frontend/src/App.tsx` footer renders the exact spec string: "History is saved on this device only. Text you analyze is sent to a serverless function and not stored." |
+| Color-blind simulator check completed for all three vision types; result recorded (line 362) | §"Color-blind palette check" above. |
+| Open questions in §12 resolved or deferred (line 367) | `docs/decision-log.md` 2026-05-09 entry "Phase 3 §12 open questions resolved" — all four answered. |
 
 ## Test coverage summary
 
@@ -187,7 +198,6 @@ These were flagged during reviews but deferred per "soon, not first":
 - App test should *force* a timestamp collision to prove id-based selection (current test happens to pass because timestamps happen to differ).
 - ResultsPanel tests should *click* the retry buttons (currently only assert visibility, so `onRetry` wiring could break unnoticed).
 - TextInput tests miss: chip-click-focuses-submit, Ctrl+Enter (separately from Meta+Enter), Enter-alone newline (no submit), max-length truncation in onChange.
-- Manual keyboard pass and screen-reader pass procedures (above) are documented but not yet executed.
 - Single-entry history delete deferred to Phase 6 polish (spec §7 marks optional).
 - True word cloud deferred to Phase 6 polish (spec §6.4 picks chips).
 
