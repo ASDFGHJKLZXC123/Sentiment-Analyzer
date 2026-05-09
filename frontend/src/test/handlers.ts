@@ -103,9 +103,8 @@ export function buildResponse(text: string): AnalysisResponse {
 }
 
 // ---- Content generation ----
-// Port of the legacy mock (frontend/src/hooks/useAnalysis.jsx:12-88), reshaped
-// to the backend output: 7-key emotions object including `neutral`, lowercase
-// sentiment label, raw YAKE-style keyword scores (lower = more relevant).
+// Reshaped to the backend output: 7-key emotions object including `neutral`,
+// lowercase sentiment label, raw YAKE-style keyword scores (lower = more relevant).
 
 const POSITIVE_WORDS = new Set(
   "love great amazing fantastic wonderful excellent best happy delighted joy thrilled perfect good awesome brilliant".split(

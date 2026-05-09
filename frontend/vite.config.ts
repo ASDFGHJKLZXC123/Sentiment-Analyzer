@@ -4,15 +4,17 @@ import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
+  // GitHub Pages serves the bundle at /Sentiment-Analyzer/ (case-exact match
+  // to the repo slug per `git remote -v`). Without this, asset URLs resolve
+  // to /assets/* and 404 on the deployed origin. Dev (`npm run dev`) still
+  // serves under /Sentiment-Analyzer/ but the Vite proxy at /api/analyze is
+  // absolute-pathed so it remains unaffected.
+  base: "/Sentiment-Analyzer/",
   plugins: [react()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
-    // Prefer .ts/.tsx over .js/.jsx so imports like `@/App` resolve to the
-    // ported TS file rather than the legacy `App.jsx` left in place for the
-    // standalone HTML+Babel entry.
-    extensions: [".mjs", ".mts", ".ts", ".tsx", ".js", ".jsx", ".json"],
   },
   server: {
     // Per phase2-backend.md §"Function URL & CORS": the Lambda's CORS allowlist

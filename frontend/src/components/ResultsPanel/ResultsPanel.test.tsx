@@ -150,9 +150,9 @@ describe("ResultsPanel: error per ApiError kind (spec §7.4)", () => {
     expect(screen.getByRole("button", { name: /Try again/i })).toBeInTheDocument();
   });
 
-  it("server (5xx): shows server-side copy + retry", () => {
+  it("server (5xx): shows cold-start-aware copy + retry", () => {
     renderWithState({ status: "error", error: { kind: "server", status: 502 } });
-    expect(screen.getByText(/Something went wrong on our end/i)).toBeInTheDocument();
+    expect(screen.getByText(/server may still be waking up/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Try again/i })).toBeInTheDocument();
   });
 

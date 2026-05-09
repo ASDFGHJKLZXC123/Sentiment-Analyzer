@@ -59,6 +59,23 @@ npm install
 npm run dev
 ```
 
+`npm run dev` reads `VITE_LAMBDA_URL` (default `/api/analyze`); the dev proxy in `vite.config.ts` forwards that prefix to the deployed Function URL so the browser stays same-origin and avoids the CORS allowlist (which is locked to the Pages origin).
+
+#### Production build
+
+The production bundle is served from GitHub Pages at `https://asdfghjklzxc123.github.io/Sentiment-Analyzer/`, so two build inputs matter:
+
+- `VITE_LAMBDA_URL` — absolute Function URL inlined into the bundle at build time (no runtime proxy on Pages). Required.
+- Vite `base` — set to `/Sentiment-Analyzer/` in `vite.config.ts` so asset URLs resolve under the Pages path.
+
+```bash
+cd frontend
+VITE_LAMBDA_URL=https://3dffhy342e747dnzwhsjexqk4u0brusk.lambda-url.us-east-1.on.aws/ npm run build
+npm run preview   # local smoke for assets/inlining only — NOT a CORS check
+```
+
+CORS validation has to happen from the deployed Pages origin; `localhost:4173` is not in the Lambda's `AllowOrigins`. Phase 5 will automate this build + `gh-pages` push in CI.
+
 ### Backend (model exploration)
 
 ```bash

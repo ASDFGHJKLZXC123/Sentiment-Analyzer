@@ -6,13 +6,7 @@ import jsxA11y from "eslint-plugin-jsx-a11y";
 
 export default tseslint.config(
   {
-    ignores: [
-      "dist",
-      "node_modules",
-      "uploads",
-      "**/*.jsx",
-      "Sentiment Analyzer.html",
-    ],
+    ignores: ["dist", "node_modules", "uploads"],
   },
   {
     files: ["**/*.{ts,tsx}"],

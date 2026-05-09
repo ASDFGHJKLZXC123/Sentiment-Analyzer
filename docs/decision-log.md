@@ -450,3 +450,37 @@ Two final closeout items captured before the `phase-3-complete` tag.
    - **Reduced-motion DevTools verification:** with `prefers-reduced-motion: reduce` emulated, the loading skeleton appeared and resolved without sustained shimmer animation.
 
 `phase-3-complete` is ready to tag. Phase 4 (`docs/phase4-integration.md`, to be created) inherits a stabilized frontend with: typed API boundary against the deployed Lambda, full state-machine + history hooks, six visual states tested, axe-clean accessibility, 113 automated tests passing, and dev-only proxy in place. Phase 4 owns the rest of cold-start UX hardening, the actual `AllowOrigins` listing for the deployed dev/preview origin if needed, and end-to-end network-failure validation against the live system.
+
+---
+
+## 2026-05-09 — Phase 4 §3 + §5: Vite base, prod-build env, cold-start copy, loading-tier thresholds
+
+Pre-deploy edits ahead of the §2 step 4 `gh-pages` push. Captured here per `phase4-integration.md` §11 ("decision-log.md updated for any spec deviations or copy/timing edits from §5 / §9").
+
+1. **Vite `base` set to `/Sentiment-Analyzer/`** in `frontend/vite.config.ts`. Case-exact match to the GitHub repo slug from `git remote -v`. Without this the bundle's asset URLs resolve to `/assets/*` and 404 from the Pages origin. Verified locally: `VITE_LAMBDA_URL=https://...lambda-url.../ npm run build` produces `dist/index.html` with `<script src="/Sentiment-Analyzer/assets/index-...js">`, the Lambda hostname is inlined into the JS chunk (one grep hit), and `npm run preview` redirects bare `/` to `/Sentiment-Analyzer/`. Dev proxy at `/api/analyze` is unaffected because it's an absolute proxy key.
+
+2. **`VITE_LAMBDA_URL` documented as a build input** in the root `README.md` Frontend section. No `frontend/README.md` exists; the spec allowed either ("alongside `frontend/README.md` or in a new section there"). The new "Production build" subsection records the absolute Function URL for prod and explains why local `npm run preview` is not a CORS check. CI automation of this flow is Phase 5's scope, not Phase 4's.
+
+3. **`kind: 'server'` banner copy generalized to cold-start-aware wording** (§5 item 1). Old: title "Something went wrong on our end." / body "This is rare — please try again." New: title "The server may still be waking up." / body "Please try again." (`frontend/src/components/ResultsPanel/ResultsPanel.tsx:138-142`). Reasoning: at 3008 MB the most common 5xx in this stack is a re-provisioned cold start (Phase 2 deviation #6), so "rare" misled users. The discriminated union stays at `{network, timeout, parse, http, server, throttled}` — no new `kind: 'cold-start'` was added because (a) it leaks an infra guess into the client contract, and (b) AWS service-generated 502s may arrive without CORS headers and surface as `kind: 'network'` instead, so any kind-specific cold-start handling would already be wrong half the time. Test in `ResultsPanel.test.tsx` updated to assert the new substring.
+
+4. **`kind: 'timeout'` banner copy left as-is** (§5 item 2). "That took longer than expected. The model may be cold — try again." remains the right message for the slow-init mode (`AbortController` 30 s ceiling on a 5–15 s cold init drag).
+
+5. **Loading-tier thresholds left at 1500 / 3000 / 10000 ms** (§5 item 4, option (a) recommended in spec). Phase 2 records warm p95 = 1,568 ms; the slow ~5% of warm requests dip into Tier 2 (silent skeleton) for ~70 ms before the success state replaces it, and never trigger the Tier 3 "Warming up" caption — so the misleading-caption risk the threshold review was guarding against is not present. Moving the spinner-to-skeleton break to 2 s was the alternative; rejected as not strictly necessary and one-more-thing-to-revisit.
+
+Out of scope for this entry (deferred to live verification): browser CORS check from the Pages origin (§4), cold-start retry confirmation in the live env (§5 item 3), and the §6 error-class matrix.
+
+---
+
+## 2026-05-09 — Phase 4 §7 audit + closeout of decision-log #12 (legacy .jsx removed)
+
+§7's "single source of truth for `MAX_TEXT_LENGTH`" check (`api/types.ts:70 = 5000`) was correct for the TS/Vite production path but the audit initially missed the legacy HTML+Babel entry (`Sentiment Analyzer.html` + 6 `.jsx` files), which carried its own `MAX_LEN = 2000` constant. Decision-log #12 had marked those for "deletion in a cleanup commit" once `phase-3-complete` was tagged. With the tag now in place, the cleanup is folded into Phase 4 to close out the dual-source ambiguity rather than leaving it for a separate commit:
+
+- Deleted: `frontend/Sentiment Analyzer.html`, `frontend/src/App.jsx`, `frontend/src/hooks/useAnalysis.jsx`, `frontend/src/components/{Atoms,HistoryList,ResultsPanel,TextInput}.jsx`.
+- Simplified `frontend/vite.config.ts`: removed the `resolve.extensions` reorder (was needed only to make `@/App` resolve to `App.tsx` instead of `App.jsx`; with `.jsx` gone, default Vite resolution is fine).
+- Updated comment in `frontend/src/test/handlers.ts` that referenced the deleted `useAnalysis.jsx`.
+
+Verification: typecheck clean, lint clean, `npm test` 108 passed, `npm run e2e` 5 passed (113 total — same count as before the cleanup), prod build still 47 modules / 217 KB JS / 13 KB CSS. The bundle does not regress because the legacy entry was never reachable from the Vite build graph.
+
+§6 audit finding (separate, no code change): `frontend/src/api/client.ts` lines 91-95 map 429 to `kind: 'throttled'` before any body parse; `client.test.ts` proves `bodyRead === false`, which covers all body shapes (empty, AWS-XML, non-JSON) the spec asked about. No mismap.
+
+§7 live-only checkboxes (5000-char paste end-to-end, 5001-char DevTools-console fetch → 422) remain deferred to the live-deploy turn.

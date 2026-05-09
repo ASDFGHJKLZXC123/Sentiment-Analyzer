@@ -136,8 +136,8 @@ const ERROR_COPY: Record<ApiError["kind"], ErrorMeta> = {
     retry: true,
   },
   server: {
-    title: "Something went wrong on our end.",
-    body: () => "This is rare — please try again.",
+    title: "The server may still be waking up.",
+    body: () => "Please try again.",
     retry: true,
   },
   parse: {
