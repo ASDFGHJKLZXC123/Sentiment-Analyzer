@@ -14,7 +14,7 @@ Paths are repo-root relative.
 | `docs/phase1-foundation.md` | Decision record + setup checklist for Phase 1 | Created |
 | `docs/phase2-backend.md` | Backend build details | Created |
 | `docs/phase2-results.md` | Phase 2 image size and performance measurements | Created |
-| `docs/phase3-frontend.md` | Frontend build details | Pending |
+| `docs/phase3-frontend.md` | Frontend stabilization details | Pending |
 | `docs/phase4-integration.md` | Integration details | Pending |
 | `docs/phase5-cicd.md` | CI/CD pipeline details | Pending |
 | `docs/phase6-polish.md` | Portfolio-readiness details | Pending |
@@ -74,37 +74,43 @@ For finalized model choices, deployment configuration, and full reasoning, see `
 
 ---
 
-## Phase 3: Frontend — React + TypeScript dashboard
+## Phase 3: Frontend Stabilization — Upgrade low-fi UI to React + TypeScript dashboard
 
-**Goal:** Build the dashboard UI that consumes the Lambda API.
+**Goal:** Upgrade the existing low-fi frontend into a typed, tested, accessible React + TypeScript dashboard.
 
 **Scope:**
-- Vite + React + TypeScript scaffolding
-- Component architecture (input, results, emotion chart, word cloud, history)
-- API integration layer with loading and error states
+- Audit the existing low-fi frontend before refactoring or replacing anything
+- Preserve working low-fi behavior where possible
+- Migrate or align the frontend with the target Vite + React + TypeScript structure
+- Component architecture: input, results panel, sentiment badge, emotion chart, keyword chips, history
+- Typed API integration layer with loading, error, retry, and timeout states
+- Mock-first API development with MSW fixtures matching the Phase 2 backend contract
+- One lightweight live Lambda contract sanity check before phase completion
 - localStorage-based history persistence
 - Responsive layout for desktop and mobile
-- Visual design language (color coding, typography, charts)
-- Frontend test strategy: Vitest + React Testing Library for components and API-state handling
+- Visual design language: color coding, typography, charts, weighted keyword chips
+- Frontend test strategy: Vitest + React Testing Library for components, hooks, and API-state handling
 - Browser and accessibility checks: Playwright smoke tests, axe checks, semantic HTML, and keyboard navigation
 
-**Output:** A locally-running React app that can call the Lambda and render results.
+**Output:** The existing low-fi frontend has been stabilized into a locally running dashboard that renders all required UI states against mocked API responses, has a typed client ready for the Lambda Function URL, and has completed one live contract sanity check. Full deployed frontend/backend integration belongs to Phase 4.
 
-**Detailed spec:** `docs/phase3-frontend.md` (to be created)
+**Detailed spec:** `docs/phase3-frontend.md`
 
 ---
 
 ## Phase 4: Integration
 
-**Goal:** Connect frontend to backend and harden the full system.
+**Goal:** Connect the stabilized frontend to the deployed backend and harden the full system.
 
 **Scope:**
+- Replace mock usage with the real deployed Lambda Function URL
+- Validate browser CORS behavior against the Lambda Function URL
 - End-to-end testing across the deployed stack
-- Error handling for cold starts, timeouts, network failures
-- Input validation on both sides (length limits, language detection)
-- All UI states fully designed (empty, typing, loading, success, error)
+- Error handling for cold starts, timeouts, network failures, malformed responses, 4xx responses, and 5xx responses
+- Input validation on both sides (length limits, language detection if included in backend scope)
+- Validate all UI states against real backend behavior: empty, typing, loading, success, error, retry-after-error, selected history
 
-**Output:** A working live demo that handles edge cases gracefully.
+**Output:** A working live demo candidate that handles deployed-system edge cases gracefully.
 
 **Detailed spec:** `docs/phase4-integration.md` (to be created)
 

@@ -374,3 +374,79 @@ Response: `200 OK` with `Access-Control-Allow-Origin: https://asdfghjklzxc123.gi
 **Still open from `phase-2-complete`:** only the optional `lambda:InvokedViaFunctionUrl` condition tightening (CLI 2.27.20 doesn't support the flag; manual `lambda put-policy` JSON edit required). Not in `phase2-backend.md`; pulled from current AWS docs. Defer to Phase 5 (CI hardening) per the existing deviation entry.
 
 **Quota-bound items remain accepted limitations:** 4096 MB memory matrix row and reserved concurrency = 10 require AWS Service Quotas requests the user has chosen not to file.
+
+---
+
+## 2026-05-08 — Phase 3 deviations from `phase3-frontend.md` / `phase3-ui-ux.md`
+
+Phase 3 (frontend stabilization, audit at `docs/phase3-audit.md`) is functionally complete: 113 automated tests passing (108 vitest + 5 Playwright), `tsc --noEmit` and `eslint .` clean, axe scans clean across idle/loading/success/error, live Lambda contract sanity-checked against `https://3dffhy342e747dnzwhsjexqk4u0brusk.lambda-url.us-east-1.on.aws/`. Bundle gzipped initial chunk = ~72 KB (well under the 250 KB target). Full results in `docs/phase3-results.md`; what follows is the catalog of deviations from the spec and audit, with the rationale for each. Manual keyboard pass and screen-reader pass (procedures in `phase3-results.md`) are still pending — they require human eyes — and the `phase-3-complete` tag is held until they're done.
+
+### Color & accessibility
+
+1. **Sentiment color tokens darkened.** Spec §5.1 starting hex values (`--color-positive: #2e7d32`, `--color-negative: #c62828`, `--color-neutral: #546e7a`) were "tuned for WCAG AA contrast on white bg" but axe found a real violation: 4.35:1 against the badge's own 12%-tint background, just below the 4.5:1 AA threshold. Plus `.sb-pct` had `opacity: 0.85` which dropped the percentage to 3.38:1. Two fixes: darken to `#1b5e20` / `#b71c1c` / `#37474f` (same hue family, deeper shade — passes 4.5:1 on the tinted bg), and drop the `.sb-pct` opacity (visual deemphasis now comes from font-weight only). Spec §11.4 mandates AA, which beats spec §5.1's specific hex values.
+
+2. **`--color-emotion-surprise` swapped from #00838f (teal) to #d81b60 (pink).** Brettel-Vienot-Mollon color-blind simulation found `sadness ↔ surprise` collisions in **all three** vision types (protan/deutan/tritan) — both are blue-family colors and collapse together for any blue-axis impairment. Audit/spec rule was clear: "If any two collapse, swap one and document." Surprise to Material pink-A700 sits in a distinct hue family. Confirmed by re-running the simulator: clean across protan and deutan, residual `disgust ↔ fear` only under tritanopia.
+
+3. **Tritanopia `disgust ↔ fear` residual collision accepted.** Green (`#558b2f`) and purple (`#6a1b9a`) both project to muddy grey under blue-yellow blindness; no two-color swap fixes both simultaneously without breaking other pairs. Tritanopia incidence is ~0.001%; emotion bars carry text labels and percentage values alongside the bar fill (spec §11.4: "color is never the only signal") so the collision is reinforcing, not load-bearing. A more thorough palette redesign is a Phase 6 item if it ever blocks a recruiter walkthrough.
+
+4. **Backend returns 7 emotions including `neutral`; spec §5.1 listed 6 emotion-color tokens.** The Phase 1 / Phase 2 contract returns `{anger, disgust, fear, joy, neutral, sadness, surprise}` because `j-hartmann/emotion-english-distilroberta-base` outputs all 7. Frontend renders all 7. Rather than adding a `--color-emotion-neutral` token, the 7th color reuses the existing sentiment `--color-neutral` (#37474f). Sentiment-neutral and emotion-neutral therefore share a hue, which is fine because they appear in different visual contexts (badge vs bar).
+
+### API client / state shape
+
+5. **`ApiError` includes `kind: 'server'` and `kind: 'parse'`.** The audit listed `{network, timeout, parse, http, throttled}` for the union. Added `server` (5xx) because spec §6 has a 5xx banner class distinct from the handler-envelope 4xx, and AWS-generated 502/504 don't follow the documented `{error: {...}}` shape. `parse` was already in the audit's list; explicit here for completeness.
+
+6. **`AnalysisState.savedAt: number | undefined` on the success branch.** The audit's discriminated union didn't include this. Added so the UI can render "Showing saved result from N min ago" when re-rendering a history entry, distinct from a fresh API result. Typed as `number | undefined` (not `?: number`) so callers under `exactOptionalPropertyTypes` can pass through without runtime branching.
+
+7. **`useAnalysis.showSaved(view, savedAt)`.** Not in the spec's `{state, run, reset}` API. Added so `App` can route a history click into the same state machine without bypassing it. Without `showSaved`, App would have to track a parallel `displayedView` and ResultsPanel would consume two different sources of result data.
+
+### History persistence
+
+8. **Storage key renamed `sa.history.v1` → `sad:history:v1`.** Spec §7 names the new key. `useHistory.loadOrMigrate()` reads the legacy key once on first load, attempts a best-effort conversion (Title-Case emotion labels → lowercase `EmotionKey`s, legacy higher-better keyword score → `weight`), writes the result under the new key, and leaves the legacy key in place per spec §7 ("avoids destructive errors").
+
+9. **History persists view-model, not raw `AnalysisResponse`.** Spec §7 didn't pick one. Persisting the view-model means `HistoryList` doesn't have to re-run `toView()` (including the YAKE inversion + emotion sort) on every render. Cost: schema must increment to `:v2` if the view-model shape ever changes. Worth it for the per-render savings and the clean separation between API contract types and persisted state.
+
+### Build & visual
+
+10. **Recharts not used.** Spec §8 picks Recharts for the emotion chart. The hand-rolled CSS bar implementation in `EmotionChart.tsx` is faithful to the spec's visual layout (bars sorted desc, accessible table fallback under `<details>` that auto-opens at narrow widths per §6.3) and adds zero bundle weight. The 250 KB target is comfortably met (68 KB gzipped JS) so Recharts could be added later if/when more chart types are needed; for now the hand-rolled bars are simpler and tested.
+
+11. **Tweaks panel removed from production.** Legacy `App.jsx` shipped a debug latency/error injection panel that opened via a `__activate_edit_mode` postMessage from a parent frame. Not in the spec; not appropriate for the production bundle. The new `App.tsx` has no postMessage hooks. Equivalent functionality during development is provided by MSW handler factories (`src/test/handlers.ts` exports `serverErrorHandler(503)` etc.) that tests use instead.
+
+12. **Legacy `.jsx` files retained alongside the `.tsx` port.** Per the audit's instruction "keep the old HTML+Babel entry working until ports complete." `frontend/Sentiment Analyzer.html` continues to load `src/{App,hooks/useAnalysis,components/*}.jsx` via Babel-Standalone. The new entry is `frontend/index.html` → `src/main.tsx` → `App.tsx`. Vite's `resolve.extensions` is explicitly reordered to `[".mjs", ".mts", ".ts", ".tsx", ".js", ".jsx", ".json"]` so `@/App` resolves to the `.tsx` port (default order would pick `.jsx` first). After tagging, the `.jsx` files can be deleted in a cleanup commit.
+
+13. **Dev-server port pinned to 5179 for e2e (not the Vite default 5173).** Another local Vite instance ("Notes" project) holds 5173 on this machine. Playwright's `webServer` block runs `npm run dev -- --port 5179 --strictPort` so the e2e suite is reproducible regardless of what else is running. Interactive `npm run dev` still uses 5173 by default with Vite's automatic port-bumping.
+
+### Process
+
+14. **Codex (`gpt-5.5`) used as a critical-review pass between major steps.** External LLM read the audit doc, then each step's diff, with explicit instructions to check the actual code rather than trust prior summaries. Caught: a duplicate-add `useEffect` regression in `App.tsx` (history dep was the whole `useHistory` return object instead of the stable `addHistory` callback), a timestamp-collision concern in `selectedId`, three missing tap-target spec compliance issues (44 × 44 minimum — fixed in CSS), and the missing-from-deviations 7th-emotion call-out. Each finding was triaged before moving on. Worth keeping the codex pass for Phase 4+.
+
+These deviations are recorded once in this entry, with full per-deviation context in `docs/phase3-results.md`. The combined acceptance checklist (`docs/phase3-frontend.md` §13 + `docs/phase3-ui-ux.md` §13) has four pending human checks before `phase-3-complete` can be tagged: (1) end-to-end keyboard pass, (2) screen reader pass with VoiceOver or NVDA on success/error states, (3) visual-state confirmation that the five states (empty, loading-tier-1, loading-tier-3, success, error) match the spec, (4) reduced-motion DevTools verification (CSS already gates animations on `prefers-reduced-motion`, but the spec wants the toggle exercised in DevTools to confirm). All four are documented procedures in `docs/phase3-results.md` §"Accessibility".
+
+---
+
+## 2026-05-08 — Phase 3 §12 open questions resolved
+
+`docs/phase3-ui-ux.md` §12 listed four open questions to resolve during the build. Each was supposed to get a decision-log entry once answered. Logged here as the closeout for that section.
+
+1. **History selection — re-run analysis on the saved input?** **No.** `useAnalysis.showSaved(view, savedAt)` and the click flow in `App.tsx` (`handleSelectHistory`) re-render the stored view-model directly without invoking `analyzeText`. Spec leaning was "default to no" to avoid scope creep; build matches that. Re-running is a Phase 6 polish item if comparing model versions becomes useful later.
+
+2. **Sample input chips — how many and what content?** **Three chips**: "Try a tweet", "Try a review", "Try a product complaint" (`frontend/src/components/TextInput/TextInput.tsx:5-22`). Each is a hand-crafted prompt picked to produce a visibly different sentiment + emotion mix when run through the live model — verified manually against the deployed Lambda during step 8. Spec leaning was three; build matches.
+
+3. **Empty-state illustration vs. icon vs. nothing?** **Icon.** `EmptyState` (in `ResultsPanel.tsx`) renders an inline 64×64 SVG document outline in `--color-text-mute` next to the "Paste some text to get started" heading. The icon is decorative (`aria-hidden="true"`); the heading is the load-bearing announcement for screen readers. Illustration was rejected as adding asset weight without proportionate portfolio value; "nothing" was rejected because the empty card looked broken. Spec leaning was the safe icon default; build matches.
+
+4. **Animation for the emotion chart bars — slide-in or static?** **Static.** Bars render at their final width on mount via inline `style.width`; the only animation in the chart region is the skeleton shimmer during loading, which is gated by `prefers-reduced-motion: reduce` in `tokens.css:139-146`. Spec leaning was "lean static" for simplicity + reduced-motion compatibility; build matches. Slide-in was rejected because spec §9 caps motion at 250 ms and bans looping idle animations, and a 7-bar slide cascade adds visual noise without information gain.
+
+---
+
+## 2026-05-09 — Phase 3 closeout: dev-only Vite proxy for CORS, all human checks confirmed
+
+Two final closeout items captured before the `phase-3-complete` tag.
+
+1. **Vite dev-server proxy at `/api/analyze` → live Lambda Function URL.** The Lambda's `AllowOrigins` (per the deployed CORS config in `phase2-results.md`) is locked to the GitHub Pages domain `https://asdfghjklzxc123.github.io`. A browser POST from `http://localhost:5180` to the Function URL fails preflight with "No 'Access-Control-Allow-Origin' header is present on the requested resource." `phase2-backend.md` lines 322-324 anticipated this exact case and prescribed the proxy fix. `frontend/vite.config.ts` now has a `server.proxy` block forwarding `/api/analyze` server-to-server to the Lambda root with `changeOrigin: true` and a path rewrite. The dev environment sets `VITE_LAMBDA_URL=/api/analyze` (a relative path, browser sees same-origin); production builds set `VITE_LAMBDA_URL` to the deployed Function URL via Phase 5 CI/CD. The proxy is dev-only and has no effect on the production bundle. Alternative considered: temporarily add `http://localhost:5180` to the Lambda's `AllowOrigins` and remove before public demo. Rejected because (a) it modifies live infrastructure for a local-dev workaround, (b) requires manual cleanup before tagging, and (c) `phase2-backend.md` already named the proxy as the preferred path.
+
+2. **All four human acceptance checks completed** (`docs/phase3-frontend.md` §13 + `docs/phase3-ui-ux.md` §13). Recorded in `docs/phase3-results.md` §"Accessibility":
+   - **Keyboard pass:** end-to-end Tab order, focus rings, focus moves, ConfirmDialog focus trap all confirmed.
+   - **Screen reader pass:** VoiceOver verified header + Analyze region (2026-05-08); error/success live-region announcements verified end-to-end via the cold-start timeout cycle (2026-05-09).
+   - **Visual-state confirmation:** empty (screenshot, 2026-05-08); loading-tier-1, loading-tier-3, success, and error all observed 2026-05-09 (the error case was the unintentional but spec-correct timeout banner during a cold start).
+   - **Reduced-motion DevTools verification:** with `prefers-reduced-motion: reduce` emulated, the loading skeleton appeared and resolved without sustained shimmer animation.
+
+`phase-3-complete` is ready to tag. Phase 4 (`docs/phase4-integration.md`, to be created) inherits a stabilized frontend with: typed API boundary against the deployed Lambda, full state-machine + history hooks, six visual states tested, axe-clean accessibility, 113 automated tests passing, and dev-only proxy in place. Phase 4 owns the rest of cold-start UX hardening, the actual `AllowOrigins` listing for the deployed dev/preview origin if needed, and end-to-end network-failure validation against the live system.

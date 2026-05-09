@@ -27,6 +27,14 @@ build/
 .vite/
 .turbo/
 
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Frontend stray uploads (auto-generated during local audit; not part of source)
+frontend/uploads/
+
 # Env / config
 .env
 .env.local
