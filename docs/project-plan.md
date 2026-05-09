@@ -15,7 +15,7 @@ Paths are repo-root relative.
 | `docs/phase2-backend.md` | Backend build details | Created |
 | `docs/phase2-results.md` | Phase 2 image size and performance measurements | Created |
 | `docs/phase3-frontend.md` | Frontend stabilization details | Pending |
-| `docs/phase4-integration.md` | Integration details | Pending |
+| `docs/phase4-integration.md` | Integration details | Created |
 | `docs/phase5-cicd.md` | CI/CD pipeline details | Pending |
 | `docs/phase6-polish.md` | Portfolio-readiness details | Pending |
 | `docs/phase7-bulk.md` | Optional bulk CSV feature details | Pending |
