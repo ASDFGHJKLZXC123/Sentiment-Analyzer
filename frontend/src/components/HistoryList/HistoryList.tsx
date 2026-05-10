@@ -78,7 +78,10 @@ export function HistoryList({
           {items.length === 0 ? (
             <p className="history-empty">Your past analyses will appear here.</p>
           ) : (
-            <ul className="history-list">
+            // role="list" restores Safari/VoiceOver list semantics that
+            // `list-style: none` strips; the jsx-a11y rule doesn't know that.
+            // eslint-disable-next-line jsx-a11y/no-redundant-roles
+            <ul className="history-list" role="list">
               {items.map((item) => {
                 const sel = item.id === selectedId;
                 const hl = item.id === highlightId && !sel;
