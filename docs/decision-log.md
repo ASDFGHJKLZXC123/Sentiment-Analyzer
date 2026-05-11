@@ -534,3 +534,18 @@ The 2026-05-06 "Phase 2 deploy: account-quota and AWS-API constraints" entry abo
 Resolution per `docs/phase6-polish.md` §3: no fresh saturation test. The 2026-05-06 entry stands as historical record; current behavioral state is captured by Phase 4's evidence. The exact new cap is not measured because Phase 6 is polish, not capacity planning — Phase 7 (if it happens) can pin a precise number if bulk-CSV throughput requires it.
 
 Impact on shipped behavior: none. Phase 2 explicitly chose not to set reserved concurrency on the function (the cap of 10 was its argument; the new higher cap removes the rationale entirely, but the not-set choice is still correct because we're not running close to either cap at portfolio traffic levels). No code or infra change.
+
+---
+
+## 2026-05-10 — Phase 6 §5: Lambda resource-policy tightening re-deferred (CLI 2.27.20 still)
+
+Plan §5 of `docs/phase6-polish.md` gated the `lambda:InvokedViaFunctionUrl`-condition tightening on local AWS CLI ≥ 2.30 (needed for the `--invoked-via-function-url` flag on `aws lambda add-permission`). Re-checked at the start of Phase 6 §5 execution:
+
+```
+$ aws --version
+aws-cli/2.27.20 Python/3.13.3 Darwin/25.4.0 source/arm64
+```
+
+Same CLI as the Phase 2 deploy and the Phase 5 spec. The flag is still unsupported locally. Per `phase6-polish.md` §5 step 3, this is the re-deferral path: no AWS change made, no policy edit attempted via manual JSON. The `lambda:InvokeFunction` resource-policy grant continues to be unconditioned (Phase 2 deviation #5 + Phase 5 deviation #2): functionally permissive (anyone with the function ARN can `Invoke` directly), but not exploitable from the public internet without the URL ARN. The maintainer can revisit when they upgrade `aws-cli` to a 2.30+ release; until then, the gate is the right place for this work.
+
+Phase 6 §10 acceptance for §5: re-deferral entry present, current CLI version recorded — this is that entry.
