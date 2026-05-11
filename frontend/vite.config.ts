@@ -35,5 +35,10 @@ export default defineConfig({
     setupFiles: ["src/test/setup.ts"],
     css: false,
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // Integration tests in App.test.tsx do full submit cycles through MSW +
+    // useAnalysis state machine + render. Phase 6 §8 added three more such
+    // tests for the sample-chips fixture, pushing the file's total runtime
+    // near the default 5s per-test timeout under jsdom. 10s gives headroom.
+    testTimeout: 10_000,
   },
 });
