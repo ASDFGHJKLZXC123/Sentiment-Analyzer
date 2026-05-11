@@ -63,14 +63,27 @@ jobs:
       - name: Smoke test
         run: |
           set -uo pipefail
-          RESP=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
-            -X POST "$FUNCTION_URL" \
-            -H 'content-type: application/json' \
-            -d '{"text":"smoke test from CI"}' \
-            --max-time 90)
+          smoke() {
+            curl -sS -o /tmp/resp.json -w "%{http_code}" \
+              -X POST "$FUNCTION_URL" \
+              -H 'content-type: application/json' \
+              -d '{"text":"smoke test from CI"}' \
+              --max-time 90
+          }
+          # First post-update invocation can 502: a fresh image pull onto a
+          # Lambda host that doesn't yet have it cached can exceed the
+          # function's 30 s timeout (Phase 2 deviation #7). The image is
+          # cached on the host regardless, so a subsequent call only pays
+          # init cost (~10 s warm init) and falls inside the timeout.
+          for attempt in 1 2 3; do
+            RESP=$(smoke)
+            [ "$RESP" = "200" ] && break
+            echo "attempt $attempt: HTTP $RESP"
+            cat /tmp/resp.json; echo
+            [ "$attempt" -lt 3 ] && sleep 15
+          done
           if [ "$RESP" != "200" ]; then
-            echo "smoke status $RESP"
-            cat /tmp/resp.json
+            echo "smoke failed after 3 attempts"
             exit 1
           fi
           jq -e '.sentiment.label and .emotions and .keywords' /tmp/resp.json
