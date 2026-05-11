@@ -85,7 +85,7 @@ The retry path is now exercised end-to-end in production CI, with both the faili
 - [x] `docs/phase5-results.md` exists with: workflow run URLs (PR + frontend deploy + backend deploy), the role ARN, observed deploy times, and any deviations. _(This doc; backend-deploy run row gets filled in shortly.)_
 - [x] `decision-log.md` updated for any spec deviations. Entry appended in this commit (`## 2026-05-10 — Phase 5 closeout: CI/CD pipeline landed in four PRs`).
 - [x] All Phase 4 automated tests still pass (pr-check ran them on each of #1–#4 against the head branch).
-- [ ] Tagged `phase-5-complete`.
+- [x] Tagged `phase-5-complete` — annotated tag `8aa46f1` on commit `0ae4e00` (Phase 5 closeout); pushed to origin.
 
 ## Hand-off to Phase 6
 
